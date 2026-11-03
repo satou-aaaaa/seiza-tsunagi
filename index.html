@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'">
+<title>星座つなぎ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="本物の星の並びの中から星座の星を見つけて線でつなぐ1日3星座のゲーム。今夜見ごろの星座が出ます。時間制限なし。">
+<meta name="theme-color" content="#070b1a">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="星座つなぎ">
+<meta property="og:title" content="星座つなぎ：今夜の星座を線でつなぐ">
+<meta property="og:description" content="本物の星空から星座の星を見つけてつなぐ。今夜見ごろの1日3星座、3分で遊べます。">
+<meta property="og:url" content="https://satou-aaaaa.github.io/seiza-tsunagi/">
+<meta property="og:image" content="https://satou-aaaaa.github.io/seiza-tsunagi/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="星座つなぎ：星空の星を線でつないで星座を描くゲーム">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700;900&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap">
+<style>
+/* 夜空。星の色は表面の温度（赤い星・青白い星）から決める */
+:root{
+  --bg:#070b1a; --bg2:#14204a; --ink:#e9ecf7; --muted:#9aa4c4; --gold:#f2c76b; --line:#ffffff22; --panel:#ffffff0d; --bad:#ff6b6b;
+  --f-disp:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:radial-gradient(120% 80% at 50% 0%,var(--bg2),var(--bg) 70%) fixed;background-color:var(--bg);color:var(--ink);font-family:var(--f-body);font-weight:500;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:460px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 28px;display:flex;flex-direction:column;gap:14px;min-height:100%;box-sizing:border-box}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px}
+h1{font-family:var(--f-disp);font-size:22px;margin:0;letter-spacing:.1em}
+h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--muted);margin-left:8px;font-weight:500}
+.icon{all:unset;cursor:pointer;font-size:18px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);box-sizing:border-box;padding:0 8px}
+button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+button.main{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:12px;background:var(--gold);color:#2a1d02;font-weight:700;font-size:17px;padding:0 16px;text-align:center;box-shadow:0 4px 0 #8d6a1f}
+button.main:active{transform:translateY(2px);box-shadow:0 2px 0 #8d6a1f}
+button.main.alt{background:#c9d3f5;box-shadow:0 4px 0 #6d7aa6;color:#141b33}
+button.sub{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-weight:700;font-size:15px;padding:0 10px;text-align:center}
+button.sub:disabled{opacity:.4;cursor:default}
+.row{display:flex;gap:10px}.row>.sub,.row>.main{flex:1 1 0}
+.note{color:var(--muted);font-size:13px;line-height:1.6;margin:0;text-align:center}
+.note a{color:var(--gold)}
+.dots{display:flex;gap:6px;flex:1;max-width:140px}
+.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.dots i.on{background:var(--gold)}.dots i.done{background:#c9d3f5}
+.cname{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.cname b{font-family:var(--f-disp);font-size:28px;letter-spacing:.08em;font-weight:900;line-height:1.1}
+.cname small{display:block;color:var(--muted);font-size:12px}
+.guide{width:84px;height:84px;border:1px solid var(--line);border-radius:10px;background:#ffffff08;flex:none}
+.guide svg{width:100%;height:100%}
+.sky{position:relative;border-radius:14px;overflow:hidden;background:radial-gradient(90% 60% at 30% 20%,#1b2a5c55,transparent 70%),linear-gradient(#0b1230,#060a18);box-shadow:inset 0 0 0 1px var(--line);touch-action:none;user-select:none;-webkit-user-select:none}
+.sky svg{display:block;width:100%;height:auto}
+.tw{animation:tw 3.2s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:1}50%{opacity:.55}}
+.cl{stroke:var(--gold);stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 0 6px #f2c76b99)}
+.bad{stroke:var(--bad);stroke-width:5;stroke-linecap:round;opacity:.9}
+#band{stroke:#ffffffaa;stroke-width:3;stroke-dasharray:8 8;stroke-linecap:round}
+.sel{fill:none;stroke:var(--gold);stroke-width:3}
+.hl{fill:none;stroke:#9fe3ff;stroke-width:4;animation:blink .6s ease-in-out 4}
+@keyframes blink{50%{opacity:.1}}
+.nm{fill:#ffe9b0;font-size:30px;font-family:var(--f-body);font-weight:700;paint-order:stroke;stroke:#060a18;stroke-width:6px}
+.status{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
+.status .bar{flex:1;height:5px;background:var(--line);border-radius:3px;margin:0 10px;overflow:hidden}
+.status .bar i{display:block;height:100%;background:var(--gold);transition:width .2s}
+.verdict{background:#f6f1e3;color:#1b1f33;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px;text-align:center;animation:up .35s ease-out}
+@keyframes up{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+.verdict b{font-family:var(--f-disp);font-size:26px}
+.verdict .note{color:#5a5f74}
+.stars{color:#d9a227;letter-spacing:.1em;font-size:22px}
+.stars .off{color:#0000002b}
+.sky .stars,.dex .stars{color:var(--gold)}
+.dex .stars .off,.line5 .stars .off{color:#ffffff2b}
+.title{font-family:var(--f-disp);font-weight:900;font-size:42px;letter-spacing:.16em;text-align:center;margin:6px 0 0}
+.lead{text-align:center;color:var(--muted);margin:0;font-size:14px;line-height:1.7}
+.tonight{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted);text-align:center}
+.tonight b{color:var(--ink)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stats div{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center}
+.stats b{display:block;font-size:20px;font-family:var(--f-disp)}
+.stats small{color:var(--muted);font-size:12px}
+.rank{text-align:center;font-size:13px;color:var(--gold)}
+.share{background:var(--panel);border-radius:12px;padding:12px;white-space:pre-line;font-size:15px;line-height:1.6;text-align:center;border:1px solid var(--line)}
+.shares{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.shares a,.shares button{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--ink);font-size:14px;font-weight:700;text-decoration:none;padding:0 6px;box-sizing:border-box;font-family:inherit;cursor:pointer}
+.line5{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.line5 div,.dex button{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;text-align:center;font-size:12px;color:var(--ink)}
+.line5 svg,.dex svg{width:100%;height:auto;display:block}
+.dex{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dex button{all:unset;box-sizing:border-box;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;text-align:center;font-size:12px;min-height:44px;cursor:pointer}
+.dex .unk{aspect-ratio:1/1.25;display:grid;place-items:center;color:var(--muted);font-size:22px;font-family:var(--f-disp)}
+dialog{border:none;border-radius:16px;background:#f6f1e3;color:#1b1f33;max-width:400px;width:calc(100% - 32px);padding:20px;box-sizing:border-box}
+dialog::backdrop{background:#000000bb}
+dialog h2{font-family:var(--f-disp);margin:0 0 10px}
+dialog ol{padding-left:1.3em;margin:0 0 12px;line-height:1.8}
+dialog p{margin:0 0 10px;font-size:14px;line-height:1.7;color:#4a4f66}
+dialog a{color:#8a5d00}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f6f1e3;color:#1b1f33;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #000a}
+.hint{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
+footer{margin-top:auto;text-align:center;font-size:12px;color:var(--muted);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+footer a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<dialog id="howto" aria-labelledby="howto-t">
+  <h2 id="howto-t">遊び方</h2>
+  <ol>
+    <li>右上の見本と同じ形の星を、夜空から探します。</li>
+    <li>星から星へ指をすべらせて離すか、2つの星を順に押すと線が引けます。</li>
+    <li>見本の線を全部引けば完成。まちがえると★が減ります。</li>
+  </ol>
+  <p>星の位置・明るさ・色は本物の星のカタログから。今夜見ごろの星座が出ます。時間制限はありません。</p>
+  <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
+  <button class="main" id="howto-ok" style="width:100%">わかった</button>
+</dialog>
+<script src="data.js"></script>
+<script>
+"use strict";
+const { CONS } = window.SZ_DATA, $ = (id) => document.getElementById(id), app = $("app");
+const SITE = "https://satou-aaaaa.github.io/seiza-tsunagi/";
+const FEEDBACK = "https://github.com/satou-aaaaa/seiza-tsunagi/issues/new?template=feedback.yml";
+const KEY = "seiza-v1", EPOCH = "2026-11-04", PER = 3, S = 1000, HIT = 62;
+
+const jstNow = () => new Date(Date.now() + 9 * 3600e3);
+const todayKey = () => jstNow().toISOString().slice(0, 10);
+const dayNo = (k) => Math.round((Date.parse(k) - Date.parse(EPOCH)) / 864e5) + 1;
+const md = (k) => `${+k.slice(5, 7)}/${+k.slice(8, 10)}`;
+const prevDay = (k) => new Date(Date.parse(k) - 864e5).toISOString().slice(0, 10);
+function seedOf(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+// その日の夜9時（日本）に南の空の真ん中に来る赤経（時）。春分ごろの夜9時がおよそ9時
+const doy = (k) => (Date.parse(k) - Date.parse(k.slice(0, 4) + "-01-01")) / 864e5 + 1;
+const raAt21 = (k) => (((doy(k) - 80) / 365.25) * 24 + 9 + 48) % 24;
+const raDist = (a, b) => { const d = Math.abs(a - b) % 24; return Math.min(d, 24 - d); };
+// 星座がいちばん見やすい月（夜9時に南中する月）
+const bestMonth = (c) => { const d = 80 + ((c.ra - 9 + 24) % 24) / 24 * 365.25; return new Date(Date.UTC(2026, 0, Math.round(d))).getUTCMonth() + 1; };
+const where = (c) => (c.dec > 50 ? "北の空" : c.dec < -15 ? "南の低い空" : c.dec > 25 ? "空の高い所" : "南の空");
+// 見ごろの星座：夜9時の南の空から近い順に7つ（北の空の星座はいつでも候補）
+function inSeason(k) { const r = raAt21(k); return CONS.map((c, i) => [i, c.dec > 50 ? Math.min(raDist(c.ra, r), 3) : raDist(c.ra, r)]).sort((a, b) => a[1] - b[1]).slice(0, 7).map((x) => x[0]); }
+function rawPick(k, salt) {
+  const R = rng(seedOf(k + salt)), pool = inSeason(k);
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  return pool.slice(0, PER).sort((a, b) => a - b);
+}
+function pick(k, hard) {
+  const R = rng(seedOf(k + (hard ? "h" : "")));
+  if (!hard) { // 前の日と同じ3つになったら選び直す（季節の候補が7つなので、ときどき重なる）
+    let a = rawPick(k, ""); if (a.join() === rawPick(prevDay(k), "").join()) a = rawPick(k, "b");
+    return a.sort((x, y) => CONS[x].lines.length - CONS[y].lines.length);
+  }
+  const daily = pick(k, false), rest = CONS.map((_, i) => i).filter((i) => !daily.includes(i));
+  for (let i = rest.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); [rest[i], rest[j]] = [rest[j], rest[i]]; }
+  return rest.slice(0, PER);
+}
+
+const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, run: null, tut: false, kofi: {} });
+function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) {} return fresh(); }
+function save(fn) { const s = load(); fn(s); try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} return s; }
+function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
+const starsOf = (m) => (m === 0 ? 3 : m <= 2 ? 2 : 1);
+const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
+const RANKS = [[0, "星見習い"], [5, "星読み"], [12, "星案内人"], [19, "星の博士"]];
+const rankOf = (n) => RANKS.filter(([x]) => n >= x).pop()[1];
+function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
+const buzz = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
+function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
+$("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
+
+// 色温度から星の色（おおよそ）
+function kColor(k) { const t = Math.max(2500, Math.min(15000, k)); if (t < 4000) return "#ffb38a"; if (t < 5200) return "#ffd2a1"; if (t < 6300) return "#fff1d6"; if (t < 8000) return "#f4f6ff"; if (t < 11000) return "#d6e2ff"; return "#b9cdff"; }
+const rOf = (v) => Math.max(4, 17 - v * 2.6);
+function starsSvg(c, opt = {}) {
+  return c.pts.map((p, i) => { const r = rOf(p[2]) * (opt.scale || 1), col = kColor(p[3]);
+    return `<g id="s${opt.pre || ""}${i}"><circle cx="${p[0] * S}" cy="${p[1] * S}" r="${(r * 2.6).toFixed(1)}" fill="${col}" opacity=".18"/><circle class="${p[2] < 1.6 && !opt.still ? "tw" : ""}" cx="${p[0] * S}" cy="${p[1] * S}" r="${r.toFixed(1)}" fill="${col}" style="animation-delay:-${(i * 0.37) % 3}s"/></g>`; }).join("");
+}
+const lineSvg = (c, [a, b], cls) => `<line class="${cls}" x1="${c.pts[a][0] * S}" y1="${c.pts[a][1] * S}" x2="${c.pts[b][0] * S}" y2="${c.pts[b][1] * S}"/>`;
+function guideSvg(c) { // 見本：星座の線だけ（位置は同じ）
+  const xs = c.lines.flat().map((i) => c.pts[i][0]), ys = c.lines.flat().map((i) => c.pts[i][1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), w = Math.max(x1 - x0, y1 - y0) * 1.25 * S, cx = (x0 + x1) / 2 * S, cy = (y0 + y1) / 2 * S;
+  return `<svg viewBox="${cx - w / 2} ${cy - w / 2} ${w} ${w}" aria-label="${c.n}の見本">${c.lines.map(([a, b]) => `<line x1="${c.pts[a][0] * S}" y1="${c.pts[a][1] * S}" x2="${c.pts[b][0] * S}" y2="${c.pts[b][1] * S}" stroke="#f2c76b" stroke-width="${w / 40}" stroke-linecap="round"/>`).join("")}${[...new Set(c.lines.flat())].map((i) => `<circle cx="${c.pts[i][0] * S}" cy="${c.pts[i][1] * S}" r="${w / 30}" fill="#fff"/>`).join("")}</svg>`;
+}
+function miniSvg(c, done = true) { return `<svg viewBox="0 0 ${S} ${S * 1.25}">${done ? c.lines.map((l) => lineSvg(c, l, "")).join("").replace(/<line /g, '<line stroke="#f2c76b" stroke-width="7" stroke-linecap="round" ') : ""}${starsSvg(c, { scale: 0.9, still: true, pre: "m" })}</svg>`; }
+
+function home() {
+  const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
+  const run = s.run && s.run.date === k && s.run.mode !== "p" ? s.run : null, n = Object.keys(s.dex).length;
+  const hero = CONS[inSeason(k)[0]], season = inSeason(k).slice(0, 4).map((i) => CONS[i].n);
+  app.innerHTML = `
+    <div class="sky" aria-hidden="true" style="width:62%;margin:0 auto">${miniSvg(hero)}</div>
+    <h1 class="title">星座つなぎ</h1>
+    <p class="lead">本物の星空から星座の星を見つけて、線でつなぐ。<br>今夜見ごろの1日3星座。</p>
+    <div class="tonight">今夜9時ごろの見ごろ　<b>${season.join("・")}</b></div>
+    ${done ? `<div class="share">今日の結果\n${done.m.map((m) => "★".repeat(starsOf(m))).join("　")}</div>` : ""}
+    <button class="main" id="go-d">${done ? "今日の結果を見る" : run && run.mode === "d" ? `続きから（${run.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
+    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : run && run.mode === "h" ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
+    <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">星座帳 ${n}/${CONS.length}</button></div>
+    <div class="stats"><div><b>${streak(s.days)}</b><small>連続の夜</small></div><div><b>${Object.keys(s.days).length}</b><small>星を見た夜</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の星座</small></div></div>
+    <p class="rank">${rankOf(n)}</p>
+    ${footer()}`;
+  $("go-d").onclick = () => (done ? result("d", k) : startRun("d"));
+  if ($("go-h")) $("go-h").onclick = () => (hdone ? result("h", k) : startRun("h"));
+  $("go-p").onclick = () => startRun("p");
+  $("go-dex").onclick = () => dex();
+  bindFooter();
+  if (!s.tut) openHow();
+}
+function startRun(mode, only) {
+  const k = todayKey();
+  save((s) => {
+    if (s.run && s.run.date === k && s.run.mode === mode && mode !== "p") return;
+    let list;
+    if (mode === "d") list = pick(k, false); else if (mode === "h") list = pick(k, true);
+    else if (only != null) list = [only];
+    else { const pool = CONS.map((_, i) => i); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, PER); }
+    s.run = { mode, date: k, list, res: [] };
+  });
+  play();
+}
+
+let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false;
+const lkey = (a, b) => (a < b ? a + "-" + b : b + "-" + a);
+function play() {
+  const s = load(), run = s.run;
+  if (!run) return home();
+  const i = run.res.length;
+  if (i >= run.list.length) return finish();
+  C = CONS[run.list[i]]; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false;
+  const label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : "練習";
+  app.innerHTML = `
+    <header><button class="icon" id="back" aria-label="もどる">←</button>
+      ${run.list.length > 1 ? `<div class="dots">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
+      <span style="font-size:13px;color:var(--muted)">${label} ${i + 1}/${run.list.length}</span></header>
+    <div class="cname"><div><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
+      <div class="guide" id="guide">${run.mode === "h" ? `<div style="display:grid;place-items:center;height:100%;color:var(--muted);font-size:12px">見本なし</div>` : guideSvg(C)}</div></div>
+    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C)}<g id="marks"></g></svg></div>
+    <div class="status"><span>線</span><span class="bar"><i id="lbar"></i></span><span id="lnum"></span></div>
+    <div class="row"><button class="sub" id="hint">ヒント</button><button class="sub" id="skip">線を消す</button></div>
+    <div id="after"></div>
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">星から星へなぞるか、2つの星を順に押して線を引きます。</p>` : ""}`;
+  $("back").onclick = home;
+  $("hint").onclick = hint;
+  $("skip").onclick = () => { if (finished) return; drawn = new Set(); $("lines").innerHTML = ""; paint(); };
+  bindSky();
+  paint();
+  window.scrollTo(0, 0);
+}
+function paint() {
+  $("lnum").textContent = `${drawn.size} / ${C.lines.length}`; $("lbar").style.width = (drawn.size / C.lines.length * 100) + "%";
+  if (!finished) $("marks").innerHTML = sel != null ? `<circle class="sel" cx="${C.pts[sel][0] * S}" cy="${C.pts[sel][1] * S}" r="26"/>` : "";
+  $("skip").disabled = !drawn.size || finished; $("hint").disabled = finished;
+}
+function nearest(ev) {
+  const svg = $("svg"), r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * S, y = (ev.clientY - r.top) / r.height * S * 1.25;
+  let best = null, bd = HIT * HIT;
+  C.pts.forEach((p, i) => { const d = (p[0] * S - x) ** 2 + (p[1] * S - y) ** 2; if (d < bd) { bd = d; best = i; } });
+  return { i: best, x, y };
+}
+function connect(a, b) {
+  if (finished || a == null || b == null || a === b) return;
+  const k = lkey(a, b);
+  if (drawn.has(k)) return;
+  if (C.lines.some(([x, y]) => lkey(x, y) === k)) {
+    drawn.add(k); $("lines").insertAdjacentHTML("beforeend", lineSvg(C, [a, b], "cl")); buzz();
+    if (drawn.size === C.lines.length) complete();
+  } else {
+    miss++; buzz(40);
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.innerHTML = lineSvg(C, [a, b], "bad"); $("lines").appendChild(g); setTimeout(() => g.remove(), 450);
+  }
+  paint();
+}
+function bindSky() {
+  // なぞる：星から指を動かして、別の星の上で離すと線（途中でほかの星をかすめても線にしない）。押すだけ：1つ目を選び、2つ目を押すと線
+  const sky = $("sky"), band = $("band"); let from = null, moved = false;
+  sky.onpointerdown = (e) => { if (finished) return; from = nearest(e).i; moved = false; try { sky.setPointerCapture(e.pointerId); } catch (x) {} };
+  sky.onpointermove = (e) => { if (from == null) return; const n = nearest(e); if (n.i !== from) moved = true;
+    band.setAttribute("x1", C.pts[from][0] * S); band.setAttribute("y1", C.pts[from][1] * S); band.setAttribute("x2", n.x); band.setAttribute("y2", n.y); band.setAttribute("visibility", moved ? "visible" : "hidden"); };
+  sky.onpointerup = sky.onpointercancel = (e) => {
+    band.setAttribute("visibility", "hidden");
+    const to = e.type === "pointerup" ? nearest(e).i : null;
+    if (from != null && moved) { if (to != null && to !== from) connect(from, to); sel = null; paint(); }
+    else if (from != null) { if (sel == null) sel = from; else if (sel === from) sel = null; else { connect(sel, from); sel = null; } paint(); }
+    from = null;
+  };
+}
+function hint() {
+  if (finished) return;
+  const rest = C.lines.filter(([a, b]) => !drawn.has(lkey(a, b)));
+  const pref = rest.find(([a, b]) => [...drawn].some((k) => k.split("-").map(Number).some((x) => x === a || x === b))) || rest[0];
+  hints++;
+  $("marks").insertAdjacentHTML("beforeend", pref.map((i) => `<circle class="hl" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="30"/>`).join(""));
+  toast("光った2つの星をつなぐ");
+}
+function complete() {
+  finished = true; sel = null; paint();
+  const m = miss + hints, st = starsOf(m);
+  const s = save((s) => { if (!s.run) return; s.run.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); });
+  $("marks").innerHTML = C.pts.slice(0, C.main).map((p, i) => (p[4] ? `<text class="nm" x="${p[0] * S + 22}" y="${p[1] * S - 14}">${p[4]}</text>` : "")).join("");
+  document.querySelectorAll(".cl").forEach((l) => (l.style.strokeWidth = 7));
+  const last = s.run && s.run.res.length >= s.run.list.length;
+  $("after").innerHTML = `<div class="verdict" role="status"><b>${C.n}</b>${starStr(st)}<p class="note">${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}　見ごろ：${bestMonth(C)}月の夜9時ごろ、${where(C)}</p><button class="main" id="next">${last ? "結果を見る" : "次の星座へ"}</button></div>`;
+  $("next").onclick = play;
+  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+}
+function finish() {
+  const s = load(), run = s.run;
+  if (!run) return home();
+  let first = false;
+  save((s2) => {
+    if (run.mode === "d" && !s2.days[run.date]) { s2.days[run.date] = { m: run.res }; first = true; }
+    if (run.mode === "h" && !s2.hdays[run.date]) { s2.hdays[run.date] = { m: run.res }; first = true; }
+    s2.run = null;
+  });
+  if (run.mode === "p") return result("p", run.date, false, run);
+  result(run.mode, run.date, first);
+}
+function untilNext() { const n = jstNow(), ms = 864e5 - (n.getTime() % 864e5); return `${Math.floor(ms / 36e5)}時間${Math.floor((ms % 36e5) / 6e4)}分`; }
+const shareText = (mode, k, ms) => `星座つなぎ${mode === "h" ? " 上級" : ""} #${dayNo(k)} ${md(k)}\n${ms.map((m) => "★".repeat(starsOf(m)) + "☆".repeat(3 - starsOf(m))).join(" ")}`;
+function result(mode, k, first, prun) {
+  const s = load();
+  const list = mode === "p" ? prun.list : pick(k, mode === "h"), rec = mode === "p" ? { m: prun.res } : (mode === "d" ? s.days : s.hdays)[k];
+  if (!rec) return home();
+  const text = shareText(mode, k, rec.m), perfect = rec.m.every((m) => m === 0), showKofi = first && mode !== "p" && perfect && !s.kofi[k + mode];
+  if (showKofi) save((s2) => { s2.kofi[k + mode] = 1; });
+  app.innerHTML = `
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>${mode === "d" ? `今夜の3星座 #${dayNo(k)}` : mode === "h" ? "上級：見本なし" : "練習"}</small></h1><span></span></header>
+    <div class="line5" style="${list.length === 1 ? "grid-template-columns:1fr" : ""}">${list.map((ci, j) => `<div>${miniSvg(CONS[ci])}<b>${CONS[ci].n}</b><br>${starStr(starsOf(rec.m[j]))}</div>`).join("")}</div>
+    ${mode !== "p" ? `<div class="share">${text}</div>
+    <button class="main" id="share">結果をシェア</button>
+    <div class="shares"><a id="toX" target="_blank" rel="noopener">Xで投稿</a><a id="toLine" target="_blank" rel="noopener">LINEで送る</a><button id="copy">コピー</button></div>
+    <p class="note">次の星座まで あと <b>${untilNext()}</b></p>` : ""}
+    ${mode === "d" && !s.hdays[k] ? `<button class="main alt" id="go-h">上級：見本なしで3星座</button>` : ""}
+    <div class="row"><button class="sub" id="go-p">${mode === "p" ? "もう一度練習" : "練習する"}</button><button class="sub" id="go-dex">星座帳を見る</button></div>
+    ${showKofi ? `<p class="note kofi">楽しめたら、<a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi でコーヒー1杯の応援</a>をもらえると、新しい星座とゲームづくりの励みになります（任意・遊ぶのはずっと無料）。</p>` : ""}
+    <p class="note"><a href="${FEEDBACK}" target="_blank" rel="noopener" id="fb">感想を送る</a></p>`;
+  $("back").onclick = home;
+  $("go-p").onclick = () => startRun("p");
+  $("go-dex").onclick = () => dex();
+  if ($("go-h")) $("go-h").onclick = () => startRun("h");
+  if (mode !== "p") {
+    const withUrl = text + "\n" + SITE;
+    $("toX").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(withUrl);
+    $("toLine").href = "https://line.me/R/share?text=" + encodeURIComponent(withUrl);
+    const copy = (t) => { (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast("コピーしました"), () => toast("コピーできませんでした")); };
+    $("copy").onclick = () => copy(withUrl);
+    $("share").onclick = () => { if (navigator.share) navigator.share({ text: withUrl }).catch(() => {}); else copy(withUrl); };
+  }
+}
+function dex() {
+  const s = load();
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座帳<small>${Object.keys(s.dex).length}/${CONS.length}</small></h1><span></span></header>
+    <p class="note">つないだ星座が集まります。押すとその星座だけ練習できます。</p>
+    <div class="dex">${CONS.map((c, i) => (c.id in s.dex ? `<button data-i="${i}" aria-label="${c.n}">${miniSvg(c)}<b>${c.n}</b><br>${starStr(s.dex[c.id])}<br><small style="color:var(--muted)">${bestMonth(c)}月</small></button>` : `<button data-i="${i}" aria-label="まだの星座"><div class="unk">？</div><small style="color:var(--muted)">${bestMonth(c)}月ごろ</small></button>`)).join("")}</div>${footer()}`;
+  $("back").onclick = home;
+  document.querySelectorAll(".dex button").forEach((b) => (b.onclick = () => { const i = +b.dataset.i; if (CONS[i].id in s.dex) startRun("p", i); else toast("今夜の3星座や練習で出会うと載ります"); }));
+  bindFooter();
+}
+
+window.__sz = { CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: () => play() };
+home();
+if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>

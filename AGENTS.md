@@ -1,0 +1,44 @@
+# AGENTS.md
+
+星座つなぎ：本物の星の並びの中から星座の星を見つけて線でつなぐ、今夜見ごろの1日3星座のゲーム。`index.html` と `data.js`（星座と星）を GitHub Pages で公開する。
+
+## 準備（最初に一度）
+
+```bash
+bash scripts/setup.sh   # Node.js（版は .nvmrc）を確かめ、検査の依存とブラウザを入れる。何度実行してもよい
+```
+
+## push する前の確認
+
+```bash
+node qa/run.mjs   # 星のデータ（本物の向き・色・線）・今夜の3星座の選び方（3年分）・押す/すべらせる・まちがい・ヒント・続きから・上級・星座帳・スマホ幅・PWA（CI の QA と同じ）
+```
+
+## このリポジトリの決まり
+
+- `data.js` は `node tools/make-data.cjs <bsc5-short.json>` で作る（手で直さない）。星の位置・等級・色温度は Yale Bright Star Catalog 第5版（https://github.com/brettonw/YaleBrightStarCatalog の bsc5-short.json）から。カタログはリポジトリに入れない。
+- 星座の線は `tools/make-data.cjs` の `CONS` にバイエル符号で書く。新しい星座を足すときは、線の結び方を信頼できる資料（国立天文台・IAU の星座図など）で確かめる。名前のある星のカタカナは `KANA`。
+- 画面は空を見上げた向き（北が上・東が左）。オリオン座のベテルギウスが左上・リゲルが右下になることを QA が見る（2026-11-04 左右が逆の絵を作りかけた）。
+- 今夜の3星座は日本時間の日付から：その日の夜9時に南の空に来る星座の近い順7つ（北の空の星座はいつでも候補）から、日付の種で3つ。前の日と同じ3つなら選び直す。上級（見本なし）は今日の3つと重ねない。`Math.random()` は練習の星座選びだけ（QA が数を見る）。
+- ★はまちがい＋ヒントの回数（0回★3・2回まで★2・それ以上★1）。時間制限は付けない。今日の3星座・上級は1日1回で、途中で閉じても続きから。練習は記録を増やさない（星座帳には載る）。
+- 線は「星から星へ指をすべらせて離す」か「2つの星を順に押す」で引く。すべらせる途中でかすめた星は線にしない（2026-11-04 長い線をなぞるとまよう星で失敗になったのを QA で見つけた）。
+- 文字は少なめ・一画面一星座。お笑いの言葉は入れない（本物っぽさ優先。QA が見る）。ほかの作品の名前・キャラ・見た目は使わない。星座の絵（神話の絵）は入れない（著作物を使わない）。
+- 共有は遊ぶ人が押したときに開くリンク（X・LINE・Web Share・コピー）だけ。シェアの文は星（★）だけ。
+- 感想は「感想を送る」から GitHub の Issue フォーム（`.github/ISSUE_TEMPLATE/feedback.yml`、ラベル「感想」）を開くだけ。項目は shared-workflows の `template/.github/ISSUE_TEMPLATE/feedback.yml` と同じにし、名前・メールは聞かない。週1で shared-workflows `routines/game-feedback.md` が読んで直す。
+- 応援は Ko-fi（https://ko-fi.com/satouaaaaa）へのただのリンクだけ。今日の3星座・上級を初めてまちがいなしで終えたときだけ、結果の画面の下に1行（共有フォルダ kofi/app-guide.md）。遊ぶのは無料のまま、有料版は置かない。
+- 外へ通信しない。外から読むのは Google Fonts の文字だけ（CSP の `connect-src 'self'` を広げない）。記録は遊ぶ人のブラウザ（localStorage）だけ。
+- 押せる所は高さ44px以上、星は近くを押せば反応する（`HIT`。幅320pxでも35px以上。QA が見る）。星どうしは画面の幅の4%以上離す（`make-data.cjs` が近すぎるまよう星を入れない）。
+- 機能を足す・直すたびに `qa/run.mjs` に検査を足す。乱数で組む部分は何百回も作って確かめる（shared-workflows `incidents/2026-10-31-roppo-empty-village.md`）。検査の期待値を乱数（練習の星座など）の結果に頼らない。
+- PWA（`manifest.webmanifest`・`sw.js`・`icon-*.png`）：画面のファイルを足したら `sw.js` の `SHELL` にも足し、中身を大きく変えたら `CACHE` の版を上げる。アイコンは `node tools/make-icons.cjs`、SNS 用の絵 `og.png` は `node tools/make-og.cjs`。
+- 公開リポジトリなので、個人情報・鍵を入れない。
+
+## 公開
+
+- GitHub Pages は `main` のルート（`/`）を公開する。PR の QA と Secret scan が ✅ になると `automerge.yml` が自動でマージする。止めたいときは下書きにするか、ラベル「自動マージしない」を付ける。
+- `sw.js`・`manifest.webmanifest` を変える PR は自動ではマージされない（`hold_paths`）。CodeRabbit のレビューを待ち、手でマージする直前に今の head へのレビューを読み直す（shared-workflows `incidents/2026-11-01-roppo-merged-before-review.md`）。CodeRabbit は PR に `@coderabbitai review` とコメントして頼む。
+
+## 共通のきまり
+
+- PR の作り方・マージの仕方は satou-aaaaa/shared-workflows の `routines/pr.md`、全体のきまりは `routines/common.md` に従う。
+- CI の部品は shared-workflows の共通部品を呼ぶ。リポジトリ側の .github/workflows には呼び出しと設定値だけを書く。
+- Claude 以外の AI・人が作業するときは、shared-workflows の `routines/tool-map.md` と `routines/without-claude.md` を読む。
