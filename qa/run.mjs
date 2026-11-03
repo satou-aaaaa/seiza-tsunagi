@@ -118,6 +118,13 @@ try {
   // 読み込み直すと2つ目から（1つ目の結果は残る）
   await page.reload(); await page.click("#go-d");
   check("途中で閉じても続きから（2つ目）", (await page.textContent("header")).includes("2/3"));
+  await page.click("#back"); await page.click("#go-p"); await page.click("#back"); await page.click("#go-d");
+  check("練習を始めても、今夜の途中経過は消えない（2つ目から）", (await page.textContent("header")).includes("2/3") && (await page.evaluate(() => window.__sz.mode())) === "d");
+  { // 別のタブで2つ目を先に終えていたら、古い画面の完成は足さず3つ目を出し直す
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.d.res.push(0); localStorage.setItem("seiza-v1", JSON.stringify(s)); });
+    const L = (await st(page)).C.lines; for (const l of L) await page.evaluate((l) => window.__sz.connect(...l), l);
+    check("古いタブで完成しても記録に足さず、今の星座（3つ目）を出し直す", (await page.evaluate(() => window.__sz.load().runs.d.res.length)) === 2 && (await page.textContent("header")).includes("3/3") && (await page.locator(".verdict").count()) === 0);
+    await page.evaluate(() => { const s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.d.res.pop(); localStorage.setItem("seiza-v1", JSON.stringify(s)); }); await page.reload(); await page.click("#go-d"); }
   for (let r = 0; r < 2; r++) { const L = (await st(page)).C.lines; for (const l of L) await page.evaluate((l) => window.__sz.connect(...l), l); await page.click("#next"); }
   const share = await page.textContent(".share");
   check("3星座で結果・シェアの文は番号と星だけ（星座名は出さない）", /星座つなぎ #\d+/.test(share) && (share.match(/[★☆]/g) || []).length === 9 && !(await page.evaluate(() => window.__sz.CONS.some((c) => document.querySelector(".share").textContent.includes(c.n)))));

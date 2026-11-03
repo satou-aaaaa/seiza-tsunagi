@@ -162,7 +162,8 @@ function pick(k, hard) {
   return rest.slice(0, PER);
 }
 
-const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, run: null, tut: false, kofi: {} });
+const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
+let MODE = "d"; // 遊んでいるモード。途中経過はモードごとに runs[mode] へ分けて置く（練習で今夜の途中を消さない）
 function load() { try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) {} return fresh(); }
 function save(fn) { const s = load(); fn(s); try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {} return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
@@ -194,7 +195,7 @@ function miniSvg(c, done = true) { return `<svg viewBox="0 0 ${S} ${S * 1.25}">$
 
 function home() {
   const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
-  const run = s.run && s.run.date === k && s.run.mode !== "p" ? s.run : null, n = Object.keys(s.dex).length;
+  const at = (m) => (s.runs[m] && s.runs[m].date === k ? s.runs[m] : null), rd = at("d"), rh = at("h"), n = Object.keys(s.dex).length;
   const hero = CONS[inSeason(k)[0]], season = inSeason(k).slice(0, 4).map((i) => CONS[i].n);
   app.innerHTML = `
     <div class="sky" aria-hidden="true" style="width:62%;margin:0 auto">${miniSvg(hero)}</div>
@@ -202,8 +203,8 @@ function home() {
     <p class="lead">本物の星空から星座の星を見つけて、線でつなぐ。<br>今夜見ごろの1日3星座。</p>
     <div class="tonight">今夜9時ごろの見ごろ　<b>${season.join("・")}</b></div>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m) => "★".repeat(starsOf(m))).join("　")}</div>` : ""}
-    <button class="main" id="go-d">${done ? "今日の結果を見る" : run && run.mode === "d" ? `続きから（${run.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
-    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : run && run.mode === "h" ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
+    <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${rd.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
+    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">星座帳 ${n}/${CONS.length}</button></div>
     <div class="stats"><div><b>${streak(s.days)}</b><small>連続の夜</small></div><div><b>${Object.keys(s.days).length}</b><small>星を見た夜</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の星座</small></div></div>
     <p class="rank">${rankOf(n)}</p>
@@ -218,24 +219,26 @@ function home() {
 function startRun(mode, only) {
   const k = todayKey();
   save((s) => {
-    if (s.run && s.run.date === k && s.run.mode === mode && mode !== "p") return;
+    const r = s.runs[mode];
+    if (r && r.date === k && mode !== "p") return;
     let list;
     if (mode === "d") list = pick(k, false); else if (mode === "h") list = pick(k, true);
     else if (only != null) list = [only];
     else { const pool = CONS.map((_, i) => i); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, PER); }
-    s.run = { mode, date: k, list, res: [] };
+    s.runs[mode] = { mode, date: k, list, res: [] };
   });
+  MODE = mode;
   play();
 }
 
-let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false;
+let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false, at = null; // at: この画面が何番目のどの星座か（古いタブの書き込みを止める）
 const lkey = (a, b) => (a < b ? a + "-" + b : b + "-" + a);
 function play() {
-  const s = load(), run = s.run;
+  const s = load(), run = s.runs[MODE];
   if (!run) return home();
   const i = run.res.length;
   if (i >= run.list.length) return finish();
-  C = CONS[run.list[i]]; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false;
+  C = CONS[run.list[i]]; at = { i, c: run.list[i], date: run.date }; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false;
   const label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : "練習";
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
@@ -302,24 +305,26 @@ function hint() {
   toast("光った2つの星をつなぐ");
 }
 function complete() {
+  const same = (r) => r && at && r.date === at.date && r.res.length === at.i && r.list[at.i] === at.c; // 保存した進み具合が、この画面と同じ星座か
+  if (!same(load().runs[MODE])) { toast("別の画面で先に進んでいます"); return play(); }
   finished = true; sel = null; paint();
   const m = miss + hints, st = starsOf(m);
-  const s = save((s) => { if (!s.run) return; s.run.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); });
+  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); });
   $("marks").innerHTML = C.pts.slice(0, C.main).map((p, i) => (p[4] ? `<text class="nm" x="${p[0] * S + 22}" y="${p[1] * S - 14}">${p[4]}</text>` : "")).join("");
   document.querySelectorAll(".cl").forEach((l) => (l.style.strokeWidth = 7));
-  const last = s.run && s.run.res.length >= s.run.list.length;
+  const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
   $("after").innerHTML = `<div class="verdict" role="status"><b>${C.n}</b>${starStr(st)}<p class="note">${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}　見ごろ：${bestMonth(C)}月の夜9時ごろ、${where(C)}</p><button class="main" id="next">${last ? "結果を見る" : "次の星座へ"}</button></div>`;
   $("next").onclick = play;
   setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
 }
 function finish() {
-  const s = load(), run = s.run;
+  const s = load(), run = s.runs[MODE];
   if (!run) return home();
   let first = false;
   save((s2) => {
     if (run.mode === "d" && !s2.days[run.date]) { s2.days[run.date] = { m: run.res }; first = true; }
     if (run.mode === "h" && !s2.hdays[run.date]) { s2.hdays[run.date] = { m: run.res }; first = true; }
-    s2.run = null;
+    s2.runs[MODE] = null;
   });
   if (run.mode === "p") return result("p", run.date, false, run);
   result(run.mode, run.date, first);
@@ -366,7 +371,7 @@ function dex() {
   bindFooter();
 }
 
-window.__sz = { CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: () => play() };
+window.__sz = { CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: (m) => { if (m) MODE = m; play(); }, mode: () => MODE };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
