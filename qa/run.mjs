@@ -1,13 +1,13 @@
 // 星座つなぎの検査。星のデータ（本物の向き・線の星）・今夜の3星座の選び方（何年分）・なぞる/押す・まちがい・ヒント・続きから・上級・星座帳・スマホ幅・PWA を確かめる。
 // 使い方: node qa/run.mjs   失敗があれば終了コード 1。結果は qa-report/report.md。
 import { chromium } from "playwright";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import vm from "node:vm";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const url = "file://" + path.join(root, "index.html");
+const url = pathToFileURL(path.join(root, "index.html")).href; // # などを含むフォルダ名でも開ける
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
 
@@ -156,6 +156,27 @@ try {
     check(`幅${w}px：横にはみ出さず、押せる所は高さ44px以上・星の押せる広さ${w === 320 ? "35" : "40"}px以上`, homeOk && !r.over && r.small.length === 0 && hit >= (w === 320 ? 35 : 40), `${r.small.join(",")} 星${hit.toFixed(0)}px`);
     await p3.close();
   }
+  { // 保存できないブラウザでも遊べる（開いているあいだは途中経過を覚えている）
+    const pb = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    pb.on("pageerror", (e) => errors.push(e.message));
+    await pb.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error("blocked"); }; });
+    await pb.goto(url); await pb.click("#howto-ok"); await pb.click("#go-d");
+    check("保存できないブラウザでも、今日の1問目が始まる", (await pb.textContent("header")).includes("1/3"));
+    await pb.click("#back");
+    check("保存できないブラウザでも、遊び方が何度も開かない", !(await pb.locator("#howto[open]").count()));
+    await pb.close(); }
+  { // 最後の1問を終えて「結果を見る」を押す前に閉じた日は、開き直すと結果へ進み記録がつく
+    const pc = await newPage();
+    await pc.evaluate(() => { const g = window.__sz, k = g.todayKey(); localStorage.setItem("seiza-v1", JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, cnt: 0, clean: 0, kofi: {}, runs: { d: { mode: "d", date: k, list: g.pick(k, false), res: [0, 0, 0] } } })); });
+    await pc.reload();
+    check("最後の1問のあと閉じても、開き直すと結果へ進み今日の記録がつく", await pc.evaluate(() => { const g = window.__sz; return !!g.load().days[g.todayKey()] && !g.load().runs.d; }));
+    await pc.close(); }
+  { // 同じ日はどのブラウザでも同じ問題：sort の比較の中で乱数を引かない（引く回数がブラウザで変わる）
+    const src = ["index.html", ...["gen.js", "data.js"].filter((f) => existsSync(path.join(root, f)))].map((f) => readFileSync(path.join(root, f), "utf8")).join("\n");
+    const bad = src.match(/\.sort\(\s*\([^)]*\)\s*=>[^\n;]*\b(R|rng|rand|Math\.random)\s*\(/g) || [];
+    check("並べ替えの比較の中で乱数を引いていない（同じ日に人によって問題が変わらない）", bad.length === 0, bad.join(" | ")); }
+} catch (e) { // 途中で止まっても、ここまでの結果とレポートは書き出す
+  check("QA の操作が最後まで完了する", false, e.message.split("\n")[0]);
 } finally {
   await browser.close();
 }
