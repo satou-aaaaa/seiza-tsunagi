@@ -1,0 +1,17 @@
+{
+  "name": "星座つなぎ",
+  "short_name": "星座つなぎ",
+  "description": "本物の星空から星座の星を見つけて線でつなぐ1日3星座のゲーム",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#070b1a",
+  "theme_color": "#070b1a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
