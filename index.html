@@ -227,6 +227,7 @@ function startRun(mode, only) {
   save((s) => {
     const r = s.runs[mode];
     if (r && r.date === k && mode !== "p") return;
+    if ((mode === "d" && s.days[k]) || (mode === "h" && s.hdays[k])) return; // 別のタブで今日の分を終えていたら、もう一度は始めない（ホームに戻る）
     let list;
     if (mode === "d") list = pick(k, false); else if (mode === "h") list = pick(k, true);
     else if (only != null) list = [only];
