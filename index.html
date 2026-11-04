@@ -165,7 +165,7 @@ function pick(k, hard) {
 const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
 let MODE = "d"; // 遊んでいるモード。途中経過はモードごとに runs[mode] へ分けて置く（練習で今夜の途中を消さない）
 let mem = null; // 保存できない環境（保存を切ったブラウザなど）では、開いているあいだだけここに置く
-function load() { try { const j = localStorage.getItem(KEY); const s = JSON.parse(j === null && mem ? mem : j); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { if (mem) return Object.assign(fresh(), JSON.parse(mem)); } return fresh(); }
+function load() { try { const s = JSON.parse(mem !== null ? mem : localStorage.getItem(KEY)); if (s && s.v === 1) return Object.assign(fresh(), s); } catch (e) { if (mem) return Object.assign(fresh(), JSON.parse(mem)); } return fresh(); } // 保存に失敗したあとは、古い記録よりメモリの方が新しい
 function save(fn) { const s = load(); fn(s); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
 const starsOf = (m) => (m === 0 ? 3 : m <= 2 ? 2 : 1);
@@ -197,7 +197,7 @@ function miniSvg(c, done = true) { return `<svg viewBox="0 0 ${S} ${S * 1.25}">$
 function home() {
   const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
   // 最後の1問を終えて結果を見る前に閉じた日は、開き直したら結果へ進める（記録をつける）
-  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.date === k && r.res.length >= r.list.length) { MODE = m; return finish(); } }
+  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
   const at = (m) => (s.runs[m] && s.runs[m].date === k ? s.runs[m] : null), rd = at("d"), rh = at("h"), n = Object.keys(s.dex).length;
   const hero = CONS[inSeason(k)[0]], season = inSeason(k).slice(0, 4).map((i) => CONS[i].n);
   app.innerHTML = `
