@@ -98,6 +98,8 @@ try {
   await page.mouse.click(...pa); await page.mouse.click(...pb);
   s = await st(page);
   check("2つの星を順に押すと線が引ける", s.drawn.length === 1 && (await page.locator("#lines .cl").count()) === 1);
+  check("つないだ線は星から星へ伸び（pathLength）、両はしの星に輪がともる", (await page.locator('#lines .cl.new[pathLength="1"]').count()) === 1 && (await page.locator("#lit .lit").count()) === 2);
+  check("見本も、引いた線は金・まだの線は灰色になる（残りの線が分かる）", (await page.locator('#guide line[stroke="#f2c76b"]').count()) === 1 && (await page.locator('#guide line[stroke="#6f7aa3"]').count()) === s.C.lines.length - 1);
   // まちがった線
   const notLine = await page.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
   await page.mouse.click(...(await center(page, notLine[0]))); await page.mouse.click(...(await center(page, notLine[1])));
@@ -113,6 +115,7 @@ try {
   }
   s = await st(page);
   check("星から星へすべらせて離すと線（途中の星をかすめても線にしない）・全部引くと完成（まちがい1回で★2）", s.finished && (await page.locator(".verdict .stars .off").textContent()).length === 1, `${s.drawn.length}/${s.C.lines.length} miss${s.miss}`);
+  check("完成すると星座の星が順に光り（星の数だけ）、夜空のふちが金になる", (await page.locator("#lit .pop").count()) === s.C.main && (await page.locator("#sky.won").count()) === 1 && (await page.locator("#lit .lit").count()) === s.C.main);
   check("完成すると名前のある星の名前が出る（デネブ・ベガなど）", (await page.locator("#marks .nm").count()) >= (s.C.pts.slice(0, s.C.main).filter((p) => p[4]).length) );
   check("見ごろの月と方角が出る", /見ごろ：\d+月の夜9時ごろ/.test(await page.textContent(".verdict")));
   await page.click("#next");
@@ -131,6 +134,7 @@ try {
     await page.evaluate(() => { const s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.d.res.pop(); localStorage.setItem("seiza-v1", JSON.stringify(s)); }); await page.reload(); await page.click("#go-d"); }
   for (let r = 0; r < 2; r++) { const L = (await st(page)).C.lines; for (const l of L) await page.evaluate((l) => window.__sz.connect(...l), l); await page.click("#next"); }
   const share = await page.textContent(".share");
+  check("新しく取れた実績が結果の画面に1行だけ出る（はじめての★3）", (await page.locator(".ach-new").count()) === 1 && (await page.textContent(".ach-new")).includes("はじめての★3"));
   check("3星座で結果・シェアの文は番号と星だけ（星座名は出さない）", /星座つなぎ #\d+/.test(share) && (share.match(/[★☆]/g) || []).length === 9 && !(await page.evaluate(() => window.__sz.CONS.some((c) => document.querySelector(".share").textContent.includes(c.n)))));
   check("X・LINE は押したときに開くリンクだけ", /^https:\/\/twitter\.com\/intent\/tweet\?text=/.test(await page.getAttribute("#toX", "href")) && /^https:\/\/line\.me\/R\/share\?text=/.test(await page.getAttribute("#toLine", "href")));
   check("まちがいのあった日は Ko-fi のひとことを出さない", (await page.locator(".kofi").count()) === 0);
@@ -141,6 +145,7 @@ try {
   check("上級は見本の形が出ない", (await page.locator("#guide svg").count()) === 0 && (await page.textContent("#guide")).includes("見本なし"));
   for (let r = 0; r < 3; r++) { const L = (await st(page)).C.lines; for (const l of L) await page.evaluate((l) => window.__sz.connect(...l), l); await page.click("#next"); }
   check("まちがいなしで初めて上級を終えると、結果の下に Ko-fi のひとことが1行", (await page.locator(".kofi").count()) === 1);
+  check("実績は1度だけ知らせる（上級の結果には上級の実績だけ・はじめての★3は出ない）", (await page.locator(".ach-new").count()) === 1 && (await page.textContent(".ach-new")).includes("見本なしデビュー") && !(await page.textContent(".ach-new")).includes("はじめての★3"));
   await page.click("#go-dex");
   const n = await page.evaluate(() => Object.keys(window.__sz.load().dex).length);
   check("星座帳に今日と上級の6星座が載る", n === 6 && (await page.locator(".dex button svg").count()) === 6, `${n}`);
@@ -205,8 +210,94 @@ try {
     check("結果を見る前に別のタブが次の日を保存しても、終えた日の記録を残す", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(); const base = { mode: "d", date: "2000-01-01", list: [1, 2, 3], tags: [1, 2, 3], id: "x", res: [], i: 0, hints: [0, 0, 0] }, done = Object.assign({}, base, { res: [0, 1, 2].map(() => ({ m: 0, g: 1, h: 0, f: 0, p: 90, n: 1 })), i: 3 }); mem = JSON.stringify(Object.assign({}, s0, { t: 5, runs: { d: done } })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 9, runs: { d: Object.assign({}, base, { date: "2000-01-02" }) } }))); const r = g.load(); mem = null; return !!r.days["2000-01-01"] && r.runs.d.date === "2000-01-02"; }, "seiza-v1"));
     check("同じ問題の練習をやり直したら、前の回（終えたもの）と取り違えず新しい回を使う", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(), base = { mode: "p", date: "2000-01-01", list: [1], tags: [1], res: [], i: 0, hints: [] }; mem = JSON.stringify(Object.assign({}, s0, { t: 9, runs: { p: Object.assign({}, base, { id: "new" }) } })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 5, runs: { p: Object.assign({}, base, { id: "old", res: [{}], i: 1 }) } }))); const r = g.load(); mem = null; return r.runs.p.id === "new"; }, "seiza-v1"));
     check("保存に失敗したあと別のタブが保存しても、帳の★は高いほうを残す", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(); mem = JSON.stringify(Object.assign({}, s0, { t: 5, dex: { zz: 3 } })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 9, dex: { zz: 1 } }))); const r = g.load(); mem = null; return r.dex.zz === 3; }, "seiza-v1"));
+    check("保存に失敗したあと、新しい側が古い形（pdays・ach が無い）でも、もう一方のあとからの記録・実績の印を落とさない（2026-11-04 CodeRabbit）", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(), strip = (o) => { const c = Object.assign({}, o); delete c.pdays; delete c.ach; delete c.apark; return c; }; mem = JSON.stringify(strip(Object.assign({}, s0, { t: 99 }))); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 1, pdays: { "2000-01-01": { m: [0, 0, 0] } }, ach: { s1: 1 } }))); const r1 = g.load(); mem = JSON.stringify(Object.assign({}, s0, { t: 1, pdays: { "2000-01-02": { m: [0, 0, 0] } }, ach: { h1: 1 } })); localStorage.setItem(K, JSON.stringify(strip(Object.assign({}, s0, { t: 99 })))); const r2 = g.load(); mem = null; return !!r1.pdays["2000-01-01"] && r1.ach.s1 === 1 && !!r2.pdays["2000-01-02"] && r2.ach.h1 === 1; }, "seiza-v1"));
     check("時計が戻っても、保存の時刻 t は前より大きくなる", await pn.evaluate((K) => { const s0 = JSON.parse(localStorage.getItem(K)); const far = Date.now() + 1e9; localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: far }))); save(() => {}); return JSON.parse(localStorage.getItem(K)).t > far; }, "seiza-v1"));
     await pn.close(); }
+  { // 実績の数え方（いまの記録から毎回数える）
+    const pa = await newPage();
+    const a = await pa.evaluate(() => {
+      const g = window.__sz, base = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, ach: {}, kofi: {} }), by = (s) => Object.fromEntries(g.achOf(s).map((x) => [x.id, x]));
+      const day = (i) => new Date(Date.UTC(2026, 10, 4 + i)).toISOString().slice(0, 10);
+      const e = by(base());
+      const s1 = base(); for (let i = 0; i < 7; i++) s1.days[day(i)] = { m: [0, 0, 0] }; s1.days[day(9)] = { m: [1, 0, 0] }; s1.pdays[day(20)] = { m: [0, 0, 2] };
+      g.CONS.slice(0, 10).forEach((c) => (s1.dex[c.id] = 3)); s1.dex[g.CONS[10].id] = 1;
+      const s2 = base(); for (const i of [0, 1, 2, 4, 5, 6, 7]) s2.days[day(i)] = { m: [0, 0, 0] }; for (let i = 8; i < 12; i++) s2.pdays[day(i)] = { m: [0, 0, 0] }; s2.days["x"] = 1; s2.hdays[day(1)] = { m: [0, 2, 0] };
+      const f1 = by(s1), f2 = by(s2), ids = g.ACH.map((x) => x[0]);
+      return { n: g.ACH.length, uniq: new Set(ids).size === ids.length, none: Object.values(e).every((x) => !x.got && x.n === 0 && x.g >= 1), f1, f2, ms: [g.maxStreak(s1.days), g.maxStreak(s2.days), g.maxStreak({})] };
+    });
+    check("実績は10〜14個・名前が重ならない・記録が無ければどれも未達成で 0/目標", a.n >= 10 && a.n <= 14 && a.uniq && a.none, `${a.n}`);
+    check("実績は腕前（★3・まちがいなし・上級）・集める（星座帳）・続ける（夜の数）を数える", a.f1.s1.got && a.f1.s10.got && !a.f1.sAll.got && a.f1.sAll.n === 10 && a.f1.clear.got && !a.f1.h1.got && a.f1.d5.got && a.f1.dHalf.got && a.f1.dAll.n === 11 && a.f1.n3.got && a.f1.n10.n === 9 && a.f1.st7.got && a.f2.h1.got && !a.f2.hc.got);
+    check("7夜つづけては今夜の3星座の連続だけ（休んだ日・あとから遊んだ日では続かない）・夜の数はあとからも数える", a.ms.join() === "7,4,0" && !a.f2.st7.got && a.f2.st7.n === 4 && a.f2.n10.got && a.f2.n30.n === 11, a.ms.join());
+    check("まだの実績は「いま/目標」で、目標を超えない", a.f1.n30.n === 9 && a.f1.n30.g === 30 && a.f1.s1.n === 1);
+    await pa.close(); }
+  // カレンダーと、取りこぼした夜をあとから遊ぶ（時計を 2026-12-03 にする）
+  async function clockPage(w, iso, seed) {
+    const p = await browser.newPage({ viewport: { width: w, height: 760 } });
+    p.on("pageerror", (e) => errors.push(e.message));
+    p.on("console", (m) => { if (m.type() === "error" && !isNoise(m.text())) errors.push(m.text()); });
+    await p.addInitScript((iso) => { const RD = Date, off = RD.parse(iso) - RD.now(); window.Date = class extends RD { constructor(...a) { if (a.length) super(...a); else super(RD.now() + off); } static now() { return RD.now() + off; } }; }, iso);
+    await p.goto(url); await p.evaluate((seed) => localStorage.setItem("seiza-v1", JSON.stringify(Object.assign({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, runs: {}, kofi: {} }, seed))), seed); await p.reload();
+    return p;
+  }
+  { const seed = { days: { "2026-11-04": { m: [0, 0, 0] }, "2026-11-20": { m: [3, 3, 4] }, "2026-12-01": { m: [0, 1, 0] }, "2026-12-02": { m: [0, 0, 0] } }, hdays: { "2026-12-02": { m: [0, 0, 0] } }, pdays: { "2026-11-28": { m: [0, 1, 0] } } };
+    const pc = await clockPage(390, "2026-12-03T03:00:00Z", seed);
+    check("ホームのカレンダーに、取りこぼした夜の数（↺4）が出る", (await pc.textContent("#go-cal")).includes("↺4"));
+    await pc.click("#go-cal");
+    const c1 = await pc.evaluate(() => ({ on: [...document.querySelectorAll(".cal .d.on")].map((e) => e.dataset.k), can: [...document.querySelectorAll(".cal button.d.can")].map((e) => e.dataset.k), h: document.querySelectorAll(".cal .d .h").length, st: (document.getElementById("cal-st") || {}).textContent || "", today: document.querySelectorAll(".cal .d.today").length, next: document.getElementById("cal-next").disabled }));
+    check("カレンダー：今月の遊んだ日に★の合計の印・上級の点・今日の枠・連続2夜", c1.on.join() === "2026-12-01,2026-12-02" && c1.h === 1 && c1.today === 1 && c1.st.includes("2夜") && c1.next, JSON.stringify(c1));
+    await pc.click("#cal-prev");
+    const c2 = await pc.evaluate(() => ({ head: document.querySelector(".calnav b").textContent, on: [...document.querySelectorAll(".cal .d.on")].map((e) => e.dataset.k), later: [...document.querySelectorAll(".cal .d.later")].map((e) => e.dataset.k), can: [...document.querySelectorAll(".cal button.d.can")].map((e) => e.dataset.k), prev: document.getElementById("cal-prev").disabled, n20: document.querySelector('.cal [data-k="2026-11-20"]').textContent }));
+    check("カレンダー：前の月へ戻れる・あとから遊んだ日は別の印（点線）・取りこぼした夜（7日以内）だけ押せる・始めた月より前へは戻らない", c2.head === "2026年11月" && c2.on.join() === "2026-11-04,2026-11-20" && c2.later.join() === "2026-11-28" && c2.can.sort().join() === "2026-11-26,2026-11-27,2026-11-29,2026-11-30" && c2.prev && c2.n20.includes("★3"), JSON.stringify(c2));
+    // あとから遊ぶ前に、今日の途中経過を作っておく（あとからで消さない）
+    await pc.click("#back"); await pc.click("#go-d"); await pc.click("#back");
+    const before = await pc.evaluate(() => { const g = window.__sz, s = g.load(); return { days: Object.keys(s.days).length, st: g.streak(s.days), rd: JSON.stringify(s.runs.d), dex: Object.keys(s.dex).length }; });
+    await pc.click("#go-cal"); await pc.click('.misses button[data-k="2026-11-29"]');
+    const run = await pc.evaluate(() => { const g = window.__sz; return { list: g.load().runs.a.list, want: g.pick("2026-11-29", false), head: document.querySelector("header").textContent }; });
+    check("取りこぼした夜は、その日付の種で今夜の3星座と同じ3つが出る", JSON.stringify(run.list) === JSON.stringify(run.want) && run.head.includes("あとから 11/29"), run.head);
+    { const L = (await st(pc)).C.lines; for (const l of L) await pc.evaluate((l) => window.__sz.connect(...l), l); await pc.click("#next"); } // 11/29 を1つ目まで
+    await pc.click("#back"); await pc.click("#go-cal"); await pc.click('.misses button[data-k="2026-11-27"]');
+    const hb = await pc.textContent("header");
+    await pc.click("#back"); await pc.click("#go-cal");
+    const cont = await pc.textContent('.misses button[data-k="2026-11-29"]');
+    await pc.click('.misses button[data-k="2026-11-29"]');
+    const back29 = await pc.evaluate(() => { const s = window.__sz.load(); return { head: document.querySelector("header").textContent, park27: !!(s.apark["2026-11-27"] && s.apark["2026-11-27"].date === "2026-11-27"), park29: s.apark["2026-11-29"] }; });
+    check("あとから：A日を途中まで→B日を始める→A日に戻ると続きから（別の日を始めても途中経過を消さない・B日は預けておく）", hb.includes("あとから 11/27 1/3") && cont.includes("続き") && back29.head.includes("あとから 11/29 2/3") && back29.park27 && back29.park29 === null, JSON.stringify([hb, cont, back29]));
+    for (let r = 0; r < 2; r++) { const L = (await st(pc)).C.lines; for (const l of L) await pc.evaluate((l) => window.__sz.connect(...l), l); await pc.click("#next"); }
+    const after = await pc.evaluate(() => { const g = window.__sz, s = g.load(); return { days: Object.keys(s.days).length, st: g.streak(s.days), rd: JSON.stringify(s.runs.d), p: !!s.pdays["2026-11-29"], ra: s.runs.a, dex: Object.keys(s.dex).length, today: !!s.days[g.todayKey()] }; });
+    check("あとから遊んだ夜は pdays に残り、今日の記録・連続の夜・今日の途中経過を変えない・星座帳には載る", after.p && after.days === before.days && after.st === before.st && after.rd === before.rd && !after.today && !after.ra && after.dex >= before.dex && after.dex > 0, JSON.stringify(after));
+    check("あとから遊んだ結果にはシェア・Ko-fi を出さない", (await pc.locator("#share, .kofi").count()) === 0 && (await pc.textContent("header")).includes("あとから"));
+    await pc.click("#go-cal"); await pc.click("#cal-prev");
+    check("あとから遊んだ夜はカレンダーで点線の印になり、もう押せない", (await pc.locator('.cal .d.later[data-k="2026-11-29"]').count()) === 1 && (await pc.locator('.misses button[data-k="2026-11-29"]').count()) === 0);
+    const out = await pc.evaluate(() => { const g = window.__sz; g.startRun("a", "2026-11-20"); const a = g.load().runs.a; g.startRun("a", "2026-11-25"); const b = g.load().runs.a; g.startRun("a", "2026-12-04"); const c = g.load().runs.a; return [!!a, !!b, !!c, !!document.querySelector(".cal")]; });
+    check("遊んだ日・8日より前・明日は、あとからでも始めない（カレンダーに戻る）", out.join() === "false,false,false,true", out.join());
+    await pc.close(); }
+  { const pz = await clockPage(390, "2026-12-03T03:00:00Z", { days: { "2026-11-20": { m: [0, 0, 0] } } });
+    await pz.click("#go-cal");
+    check("連続の夜が0のときは、カレンダーに連続の言葉を出さない（休んだ日を責めない）", (await pz.locator("#cal-st").count()) === 0 && !/休|サボ|途切/.test(await pz.textContent("#app")));
+    await pz.close(); }
+  { // 取りこぼした夜の選び方を600日分：きのう〜7日前・始めた日より後・遊んだ日を除く
+    const pm = await newPage();
+    const r = await pm.evaluate(() => {
+      const g = window.__sz, bad = []; let shown = 0;
+      for (let d = 0; d < 600; d++) {
+        const k = new Date(Date.UTC(2026, 10, 4 + d)).toISOString().slice(0, 10), s = { days: {}, pdays: {} };
+        for (let i = 1; i <= 9; i++) { const x = new Date(Date.parse(k) - i * 864e5).toISOString().slice(0, 10); if ((d * 7 + i * 3) % 5 === 0) s.days[x] = { m: [0, 0, 0] }; else if ((d + i) % 7 === 0) s.pdays[x] = { m: [0, 0, 0] }; }
+        const m = g.missed(s, k), want = [];
+        for (let i = 1; i <= 7; i++) { const x = new Date(Date.parse(k) - i * 864e5).toISOString().slice(0, 10); if (x >= "2026-11-04" && !s.days[x] && !s.pdays[x]) want.push(x); }
+        if (m.join() !== want.join()) bad.push(k);
+        for (const x of m) { const a = g.pick(x, false); if (a.length !== 3 || new Set(a).size !== 3 || a.join() !== g.pick(x, false).join()) bad.push(k + ":" + x); }
+        shown += m.length;
+      }
+      return { bad: bad.slice(0, 3), n: bad.length, shown };
+    });
+    check("600日分で、取りこぼした夜はきのう〜7日前・始めた日より後・遊んだ日を除いたもの（問題は日付どおりで毎回同じ）", r.n === 0 && r.shown > 600, `${r.bad.join(" | ")} 出た数${r.shown}`);
+    await pm.close(); }
+  for (const w of [320, 390]) { // 実績・カレンダーの画面が狭い幅で崩れない
+    const pw = await clockPage(w, "2026-12-03T03:00:00Z", { days: { "2026-12-01": { m: [0, 0, 0] } }, pdays: { "2026-11-29": { m: [1, 0, 0] } } });
+    const look = async () => pw.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) }));
+    const h = await look(); await pw.click("#go-ach"); const a = await look(); const rows = await pw.locator(".ach").count(); await pw.click("#back"); await pw.click("#go-cal"); const c = await look(); await pw.click("#cal-prev"); const c2 = await look();
+    check(`幅${w}px：ホーム・実績・カレンダーが横にはみ出さず、押せる所は高さ44px以上`, [h, a, c, c2].every((x) => !x.over && x.small.length === 0) && rows >= 10, JSON.stringify([h, a, c, c2].map((x) => x.small)));
+    await pw.close(); }
   { // 同じ日はどのブラウザでも同じ問題：sort の比較の中で乱数を引かない（引く回数がブラウザで変わる）
     const src = ["index.html", ...["gen.js", "data.js"].filter((f) => existsSync(path.join(root, f)))].map((f) => readFileSync(path.join(root, f), "utf8")).join("\n");
     const bad = src.match(/\.sort\(\s*\([^)]*\)\s*=>[^\n;]*\b(R|rng|rand|Math\.random)\s*\(/g) || [];
@@ -214,6 +305,23 @@ try {
 } catch (e) { // 途中で止まっても、ここまでの結果とレポートは書き出す
   check("QA の操作が最後まで完了する", false, e.message.split("\n")[0]);
 } finally {
+  try { // キーボードで選んだボタンに枠が出る（all:unset のカレンダーのます目でも消えない。2026-11-04 CodeRabbit の指摘）。止まっても失敗として記録し、レポートまで進む
+    const pf = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    await pf.goto(url); await pf.evaluate(() => localStorage.clear()); await pf.reload();
+    await pf.click("#howto-ok").catch(() => {});
+    const bad = [];
+    for (const open of [null, "#go-cal"]) {
+      if (open) await pf.click(open);
+      await pf.keyboard.press("Shift");
+      bad.push(...await pf.evaluate(() => {
+        const cal = document.querySelector(".cal");
+        if (cal) { const b = document.createElement("button"); b.className = (cal.querySelector("button") || cal.lastElementChild).className + " miss"; b.textContent = "1"; cal.append(b); }
+        return [...document.querySelectorAll("button:not([disabled]),a[href]")].filter((b) => b.checkVisibility()).filter((b) => { b.focus(); const cs = getComputedStyle(b); return !b.matches(":focus-visible") || cs.outlineStyle === "none" || parseFloat(cs.outlineWidth) < 2; }).map((b) => b.className || b.id || b.tagName);
+      }));
+    }
+    check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", bad.length === 0, bad.join(","));
+    await pf.close();
+  } catch (e) { check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", false, e.message.split("\n")[0]); }
   await browser.close();
 }
 check("画面のエラーが無い", errors.length === 0, errors.slice(0, 3).join(" | "));

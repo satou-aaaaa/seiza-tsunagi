@@ -39,7 +39,6 @@ header{display:flex;justify-content:space-between;align-items:center;gap:8px;min
 h1{font-family:var(--f-disp);font-size:22px;margin:0;letter-spacing:.1em}
 h1 small{font-family:var(--f-body);font-size:12px;letter-spacing:0;color:var(--muted);margin-left:8px;font-weight:500}
 .icon{all:unset;cursor:pointer;font-size:18px;min-width:44px;height:44px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);box-sizing:border-box;padding:0 8px}
-button:focus-visible,a:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 button.main{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:12px;background:var(--gold);color:#2a1d02;font-weight:700;font-size:17px;padding:0 16px;text-align:center;box-shadow:0 4px 0 #8d6a1f}
 button.main:active{transform:translateY(2px);box-shadow:0 2px 0 #8d6a1f}
 button.main.alt{background:#c9d3f5;box-shadow:0 4px 0 #6d7aa6;color:#141b33}
@@ -104,9 +103,45 @@ dialog p{margin:0 0 10px;font-size:14px;line-height:1.7;color:#4a4f66}
 dialog a{color:#8a5d00;min-height:44px;display:inline-flex;align-items:center}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f6f1e3;color:#1b1f33;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #000a}
 .hint{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
+/* つないだ手ごたえ：線が星から星へ伸び、両はしの星に輪がともる。完成すると星座の星が順に光る */
+.cl.new{animation:draw .28s ease-out}
+@keyframes draw{from{stroke-dashoffset:1}}
+.cl.new{stroke-dasharray:1}
+.lit{fill:none;stroke:var(--gold);stroke-width:3;opacity:.8;transform-box:fill-box;transform-origin:center}
+.lit.new{animation:lit .45s ease-out}
+@keyframes lit{from{transform:scale(2.4);opacity:0}}
+.pop{fill:none;stroke:#fff4cf;stroke-width:4;opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .9s ease-out forwards}
+@keyframes pop{0%{transform:scale(.4);opacity:1}100%{transform:scale(3.2);opacity:0}}
+.sky.won{box-shadow:inset 0 0 0 1px var(--gold),0 0 28px #f2c76b44;transition:box-shadow .4s}
+.ach-new{background:#fff3cf;color:#5a3d00;border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;margin:0;text-align:center}
+.achs{display:flex;flex-direction:column;gap:8px}
+.ach{display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ach .ic{font-size:22px;text-align:center;filter:grayscale(1);opacity:.45}
+.ach.got{border-color:#f2c76b88}.ach.got .ic{filter:none;opacity:1}
+.ach b{display:block;font-size:15px}.ach small{color:var(--muted);font-size:12px;line-height:1.5}
+.ach .pg{font-size:12px;color:var(--muted);text-align:right;min-width:44px}
+.ach .pg i{display:block;height:4px;border-radius:2px;background:var(--line);margin-top:4px;overflow:hidden}
+.ach .pg i span{display:block;height:100%;background:var(--gold)}
+.ach.got .pg{color:var(--gold)}
+.calnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.calnav b{font-family:var(--f-disp);font-size:20px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal .wd{font-size:11px;color:var(--muted)}
+.cal .d{all:unset;box-sizing:border-box;min-height:44px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px;color:var(--muted);position:relative;line-height:1.1}
+.cal .d.on{color:#1b1f33;font-weight:700}
+.cal .d.later{border:1.5px dashed #f2c76b99;color:var(--ink)}
+.cal .d.can{border:1.5px dotted var(--muted);color:var(--ink);cursor:pointer}
+.cal .d.today{outline:2px solid var(--gold);outline-offset:-2px}
+.cal .d small{font-size:10px}
+.cal .d .h{position:absolute;top:3px;right:4px;width:6px;height:6px;border-radius:50%;background:#9fe3ff}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;font-size:12px;color:var(--muted)}
+.misses{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.misses .sub{flex:0 0 auto;min-width:88px}
 footer{margin-top:auto;text-align:center;font-size:12px;color:var(--muted);display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
 footer a{color:var(--muted);min-height:44px;display:inline-flex;align-items:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* all:unset のボタン（カレンダーのます目など）でも枠が消えないよう、いちばん最後に強く書く（2026-11-04 CodeRabbit） */
+:is(button,a):focus-visible{outline:2px solid var(--gold)!important;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -162,19 +197,44 @@ function pick(k, hard) {
   return rest.slice(0, PER);
 }
 
-const fresh = () => ({ v: 1, days: {}, hdays: {}, dex: {}, runs: {}, tut: false, kofi: {} });
+const fresh = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, tut: false, kofi: {}, ach: {}, apark: {} }); // pdays: あとから遊んだ日の結果（連続の夜・今日の記録には数えない）。ach: 結果の画面で知らせ終えた実績。apark: あとから遊ぶ日の途中経過を日付ごとに預けておく所（別の日を始めても消さない。戻したら null）
 let MODE = "d"; // 遊んでいるモード。途中経過はモードごとに runs[mode] へ分けて置く（練習で今夜の途中を消さない）
 let mem = null; // 保存できない環境（保存を切ったブラウザなど）では、開いているあいだだけここに置く
 const doneOf = (r) => !!r && r.res.length >= r.list.length, recOf = (r) => ({ m: r.res });
 // 終わった今日・上級の回を日ごとの記録に入れる（結果を見る前に別のタブが次の日を保存しても、終えた日を失わない）
-function bank(s, r) { const b = doneOf(r) ? (r.mode === "d" ? s.days : r.mode === "h" ? s.hdays : null) : null; if (!b || b[r.date]) return false; b[r.date] = recOf(r); return true; }
-function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = r.mode === "d" ? s.days : r.mode === "h" ? s.hdays : null; if (bd && !bd[r.date]) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; bank(s, l); s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y); s.runs[m] = px > py ? x : py > px ? y : n.runs[m]; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
+const bookOf = (s, m) => (m === "d" ? s.days : m === "h" ? s.hdays : m === "a" ? s.pdays : null); // モードごとの日ごとの記録（練習は無し）
+function bank(s, r) { const b = doneOf(r) ? bookOf(s, r.mode) : null; if (!b || b[r.date]) return false; b[r.date] = recOf(r); return true; }
+function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); a = Object.assign(fresh(), a); b = Object.assign(fresh(), b); /* 先に両方を補う（古い形の側に無い pdays・ach を統合で落とさない） */ const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = bookOf(s, r.mode); if (bd && !bd[r.date]) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; if (!bank(s, l) && m === "a" && !doneOf(l) && !s.apark[l.date]) s.apark[l.date] = l; s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y); s.runs[m] = px > py ? x : py > px ? y : n.runs[m]; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
 function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
 const starsOf = (m) => (m === 0 ? 3 : m <= 2 ? 2 : 1);
 const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
 const RANKS = [[0, "星見習い"], [5, "星読み"], [12, "星案内人"], [19, "星の博士"]];
 const rankOf = (n) => RANKS.filter(([x]) => n >= x).pop()[1];
+// 実績：いまの記録から毎回数える（腕前・集める・続けるをまぜる）。[id, 絵, 名前, 条件, (記録) => [いま, 目標]]
+const recs = (b) => Object.values(b || {}).filter((r) => r && Array.isArray(r.m));
+const clean = (b) => recs(b).filter((r) => r.m.length && r.m.every((m) => m === 0)).length;
+const n3 = (s) => Object.values(s.dex).filter((x) => x >= 3).length;
+const nights = (s) => new Set([...Object.keys(s.days), ...Object.keys(s.pdays || {})].filter((k) => /^\d{4}-\d\d-\d\d$/.test(k))).size; // 遊んだ夜（あとから遊んだ日も入れる）
+function maxStreak(days) { let best = 0; for (const k of Object.keys(days)) { if (!/^\d{4}-\d\d-\d\d$/.test(k) || days[prevDay(k)]) continue; let n = 0, d = k; while (days[d]) { n++; d = new Date(Date.parse(d) + 864e5).toISOString().slice(0, 10); } best = Math.max(best, n); } return best; }
+const ACH = [
+  ["s1", "⭐", "はじめての★3", "星座を1つ★3でつなぐ", (s) => [n3(s), 1]],
+  ["clear", "🌌", "澄んだ夜", "1日の3星座をまちがいなしで", (s) => [clean(s.days) + clean(s.pdays), 1]],
+  ["h1", "🔭", "見本なしデビュー", "上級を最後までつなぐ", (s) => [recs(s.hdays).length, 1]],
+  ["hc", "👁", "星の目", "上級をまちがいなしで", (s) => [clean(s.hdays), 1]],
+  ["s10", "✨", "★3を10星座", "10の星座を★3でつなぐ", (s) => [n3(s), 10]],
+  ["sAll", "🌠", "満天の★3", "全部の星座を★3でつなぐ", (s) => [n3(s), CONS.length]],
+  ["d5", "📖", "星座帳5つ", "星座帳に5つ集める", (s) => [Object.keys(s.dex).length, 5]],
+  ["dHalf", "📚", "星座帳の半分", `星座帳に${Math.ceil(CONS.length / 2)}集める`, (s) => [Object.keys(s.dex).length, Math.ceil(CONS.length / 2)]],
+  ["dAll", "🏛", "星座帳を全部", "星座帳を全部うめる", (s) => [Object.keys(s.dex).length, CONS.length]],
+  ["n3", "🌙", "3つの夜", "3つの夜に星を見る", (s) => [nights(s), 3]],
+  ["n10", "🌓", "10の夜", "10の夜に星を見る", (s) => [nights(s), 10]],
+  ["n30", "🌕", "30の夜", "30の夜に星を見る", (s) => [nights(s), 30]],
+  ["st7", "🗓", "7夜つづけて", "今夜の3星座を7夜つづけて", (s) => [maxStreak(s.days), 7]],
+];
+const achOf = (s) => ACH.map(([id, ic, name, cond, f]) => { const [n, g] = f(s); return { id, ic, name, cond, n: Math.min(n, g), g, got: n >= g }; });
+// 取りこぼした夜：きのうから7日前までで、今夜の3星座を遊んでいない日（始めた日 EPOCH より前は出さない）
+function missed(s, k = todayKey()) { const out = []; let d = k; for (let i = 0; i < 7; i++) { d = prevDay(d); if (d < EPOCH) break; if (!s.days[d] && !s.pdays[d]) out.push(d); } return out; }
 function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
 const buzz = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
@@ -193,14 +253,14 @@ const lineSvg = (c, [a, b], cls) => `<line class="${cls}" x1="${c.pts[a][0] * S}
 function guideSvg(c) { // 見本：星座の線だけ（位置は同じ）
   const xs = c.lines.flat().map((i) => c.pts[i][0]), ys = c.lines.flat().map((i) => c.pts[i][1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys), w = Math.max(x1 - x0, y1 - y0) * 1.25 * S, cx = (x0 + x1) / 2 * S, cy = (y0 + y1) / 2 * S;
-  return `<svg viewBox="${cx - w / 2} ${cy - w / 2} ${w} ${w}" aria-label="${c.n}の見本">${c.lines.map(([a, b]) => `<line x1="${c.pts[a][0] * S}" y1="${c.pts[a][1] * S}" x2="${c.pts[b][0] * S}" y2="${c.pts[b][1] * S}" stroke="#f2c76b" stroke-width="${w / 40}" stroke-linecap="round"/>`).join("")}${[...new Set(c.lines.flat())].map((i) => `<circle cx="${c.pts[i][0] * S}" cy="${c.pts[i][1] * S}" r="${w / 30}" fill="#fff"/>`).join("")}</svg>`;
+  return `<svg viewBox="${cx - w / 2} ${cy - w / 2} ${w} ${w}" aria-label="${c.n}の見本">${c.lines.map(([a, b]) => `<line data-k="${lkey(a, b)}" x1="${c.pts[a][0] * S}" y1="${c.pts[a][1] * S}" x2="${c.pts[b][0] * S}" y2="${c.pts[b][1] * S}" stroke="#f2c76b" stroke-width="${w / 40}" stroke-linecap="round"/>`).join("")}${[...new Set(c.lines.flat())].map((i) => `<circle cx="${c.pts[i][0] * S}" cy="${c.pts[i][1] * S}" r="${w / 30}" fill="#fff"/>`).join("")}</svg>`;
 }
 function miniSvg(c, done = true) { return `<svg viewBox="0 0 ${S} ${S * 1.25}">${done ? c.lines.map((l) => lineSvg(c, l, "")).join("").replace(/<line /g, '<line stroke="#f2c76b" stroke-width="7" stroke-linecap="round" ') : ""}${starsSvg(c, { scale: 0.9, still: true, pre: "m" })}</svg>`; }
 
 function home() {
   const s = load(), k = todayKey(), done = s.days[k], hdone = s.hdays[k];
   // 最後の1問を終えて結果を見る前に閉じた日は、開き直したら結果へ進める（記録をつける）
-  for (const m of ["d", "h"]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
+  for (const m of ["d", "h", "a"]) { const r = s.runs[m]; if (r && r.res.length >= r.list.length) { MODE = m; return finish(); } }
   const at = (m) => (s.runs[m] && s.runs[m].date === k ? s.runs[m] : null), rd = at("d"), rh = at("h"), n = Object.keys(s.dex).length;
   const hero = CONS[inSeason(k)[0]], season = inSeason(k).slice(0, 4).map((i) => CONS[i].n);
   app.innerHTML = `
@@ -212,6 +272,7 @@ function home() {
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${rd.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
     ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">星座帳 ${n}/${CONS.length}</button></div>
+    <div class="row"><button class="sub" id="go-cal">カレンダー${missed(s, k).length ? ` <small style="color:var(--gold)">↺${missed(s, k).length}</small>` : ""}</button><button class="sub" id="go-ach">実績 ${achOf(s).filter((a) => a.got).length}/${ACH.length}</button></div>
     <div class="stats"><div><b>${streak(s.days)}</b><small>連続の夜</small></div><div><b>${Object.keys(s.days).length}</b><small>星を見た夜</small></div><div><b>${Object.values(s.dex).filter((x) => x >= 3).length}</b><small>★3の星座</small></div></div>
     <p class="rank">${rankOf(n)}</p>
     ${footer()}`;
@@ -219,22 +280,32 @@ function home() {
   if ($("go-h")) $("go-h").onclick = () => (hdone ? result("h", k) : k === todayKey() ? startRun("h") : home()); // 画面を開いたまま0時を過ぎたら、翌日の上級は始めない
   $("go-p").onclick = () => startRun("p");
   $("go-dex").onclick = () => dex();
+  $("go-cal").onclick = () => calendar();
+  $("go-ach").onclick = () => achView();
   bindFooter();
   if (!s.tut) openHow();
 }
 function startRun(mode, only) {
-  const k = todayKey();
+  const k = mode === "a" ? only : todayKey(); // a: 取りこぼした日をあとから（only はその日付）
+  if (mode === "a" && !(load().runs.a && load().runs.a.date === k) && !missed(load()).includes(k)) return calendar(); // 7日より前・遊んだ日・未来の日は始めない
   save((s) => {
     const r = s.runs[mode];
     if (r && r.date === k && mode !== "p") return;
+    if (mode === "a" && (s.days[k] || s.pdays[k])) return;
+    if (mode === "a") { // 別の日の途中経過は日付ごとに預け、預けてあった日なら続きから
+      if (r && !doneOf(r)) s.apark[r.date] = r;
+      const old = new Date(Date.parse(todayKey()) - 7 * 864e5).toISOString().slice(0, 10); for (const d in s.apark) if (s.apark[d] && d < old) s.apark[d] = null; // 7日より前の預かりは片づける
+      const p = s.apark[k]; if (p && p.date === k && !doneOf(p)) { s.runs.a = p; s.apark[k] = null; return; }
+    }
     if ((mode === "d" && s.days[k]) || (mode === "h" && s.hdays[k])) return; // 別のタブで今日の分を終えていたら、もう一度は始めない（ホームに戻る）
     let list;
-    if (mode === "d") list = pick(k, false); else if (mode === "h") list = pick(k, true);
+    if (mode === "d" || mode === "a") list = pick(k, false); else if (mode === "h") list = pick(k, true); // あとからも、その日付の種で今夜の3星座と同じ3つ
     else if (only != null) list = [only];
     else { const pool = CONS.map((_, i) => i); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, PER); }
     s.runs[mode] = { mode, date: k, list, res: [], ...(mode === "p" ? { id: Date.now().toString(36) + "-" + performance.now().toFixed(3) } : {}) }; // 練習は始めるたびに見分ける（同じ星座をやり直しても、古い回と取り違えない）
   });
   MODE = mode;
+  if (mode === "a" && !(load().runs.a && load().runs.a.date === k)) return calendar();
   play();
 }
 
@@ -246,27 +317,28 @@ function play() {
   const i = run.res.length;
   if (i >= run.list.length) return finish();
   C = CONS[run.list[i]]; at = { i, c: run.list[i], date: run.date }; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false;
-  const label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : "練習";
+  const label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : run.mode === "a" ? `あとから ${md(run.date)}` : "練習";
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
       ${run.list.length > 1 ? `<div class="dots">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
       <span style="font-size:13px;color:var(--muted)">${label} ${i + 1}/${run.list.length}</span></header>
     <div class="cname"><div><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
       <div class="guide" id="guide">${run.mode === "h" ? `<div style="display:grid;place-items:center;height:100%;color:var(--muted);font-size:12px">見本なし</div>` : guideSvg(C)}</div></div>
-    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C)}<g id="marks"></g></svg></div>
+    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C)}<g id="lit"></g><g id="marks"></g></svg></div>
     <div class="status"><span>線</span><span class="bar"><i id="lbar"></i></span><span id="lnum"></span></div>
     <div class="row"><button class="sub" id="hint">ヒント</button><button class="sub" id="skip">線を消す</button></div>
     <div id="after"></div>
     ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">星から星へなぞるか、2つの星を順に押して線を引きます。</p>` : ""}`;
   $("back").onclick = home;
   $("hint").onclick = hint;
-  $("skip").onclick = () => { if (finished) return; drawn = new Set(); $("lines").innerHTML = ""; paint(); };
+  $("skip").onclick = () => { if (finished) return; drawn = new Set(); $("lines").innerHTML = ""; $("lit").innerHTML = ""; paint(); };
   bindSky();
   paint();
   window.scrollTo(0, 0);
 }
 function paint() {
   $("lnum").textContent = `${drawn.size} / ${C.lines.length}`; $("lbar").style.width = (drawn.size / C.lines.length * 100) + "%";
+  document.querySelectorAll("#guide line").forEach((l) => l.setAttribute("stroke", drawn.has(l.dataset.k) ? "#f2c76b" : "#6f7aa3")); // 見本も、引いた線は金・まだの線は灰色（残りがひと目で分かる）
   if (!finished) $("marks").innerHTML = sel != null ? `<circle class="sel" cx="${C.pts[sel][0] * S}" cy="${C.pts[sel][1] * S}" r="26"/>` : "";
   $("skip").disabled = !drawn.size || finished; $("hint").disabled = finished;
 }
@@ -281,7 +353,9 @@ function connect(a, b) {
   const k = lkey(a, b);
   if (drawn.has(k)) return;
   if (C.lines.some(([x, y]) => lkey(x, y) === k)) {
-    drawn.add(k); $("lines").insertAdjacentHTML("beforeend", lineSvg(C, [a, b], "cl")); buzz();
+    drawn.add(k); $("lines").insertAdjacentHTML("beforeend", lineSvg(C, [a, b], "cl new").replace("<line ", '<line pathLength="1" ')); buzz();
+    const on = new Set([...$("lit").querySelectorAll("circle")].map((e) => +e.dataset.i)); // つないだ星に輪をともす（初めてつないだ星だけ、ふわっと）
+    for (const i of [a, b]) if (!on.has(i)) $("lit").insertAdjacentHTML("beforeend", `<circle class="lit new" data-i="${i}" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="${(rOf(C.pts[i][2]) + 9).toFixed(1)}"/>`);
     if (drawn.size === C.lines.length) complete();
   } else {
     miss++; buzz(40);
@@ -319,6 +393,8 @@ function complete() {
   const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); });
   $("marks").innerHTML = C.pts.slice(0, C.main).map((p, i) => (p[4] ? `<text class="nm" x="${p[0] * S + 22}" y="${p[1] * S - 14}">${p[4]}</text>` : "")).join("");
   document.querySelectorAll(".cl").forEach((l) => (l.style.strokeWidth = 7));
+  $("sky").classList.add("won"); // 完成：星座の星が順に光る
+  $("lit").insertAdjacentHTML("beforeend", C.pts.slice(0, C.main).map((p, i) => `<circle class="pop" cx="${p[0] * S}" cy="${p[1] * S}" r="20" style="animation-delay:${i * 70}ms"/>`).join(""));
   const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
   $("after").innerHTML = `<div class="verdict" role="status"><b>${C.n}</b>${starStr(st)}<p class="note">${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}　見ごろ：${bestMonth(C)}月の夜9時ごろ、${where(C)}</p><button class="main" id="next">${last ? "結果を見る" : "次の星座へ"}</button></div>`;
   $("next").onclick = play;
@@ -340,18 +416,23 @@ function untilNext() { const n = jstNow(), ms = 864e5 - (n.getTime() % 864e5); r
 const shareText = (mode, k, ms) => `星座つなぎ${mode === "h" ? " 上級" : ""} #${dayNo(k)} ${md(k)}\n${ms.map((m) => "★".repeat(starsOf(m)) + "☆".repeat(3 - starsOf(m))).join(" ")}`;
 function result(mode, k, first, prun) {
   const s = load();
-  const list = mode === "p" ? prun.list : pick(k, mode === "h"), rec = mode === "p" ? { m: prun.res } : (mode === "d" ? s.days : s.hdays)[k];
+  const list = mode === "p" ? prun.list : pick(k, mode === "h"), rec = mode === "p" ? { m: prun.res } : bookOf(s, mode)[k];
   if (!rec) return home();
-  const text = shareText(mode, k, rec.m), perfect = rec.m.every((m) => m === 0), showKofi = first && mode !== "p" && perfect && !s.kofi[k + mode];
+  const text = shareText(mode, k, rec.m), perfect = rec.m.every((m) => m === 0), showKofi = first && (mode === "d" || mode === "h") && perfect && !s.kofi[k + mode];
   if (showKofi) save((s2) => { s2.kofi[k + mode] = 1; });
+  const fresh1 = achOf(s).filter((a) => a.got && !s.ach[a.id]); // 新しく取れた実績は、結果の画面で1度だけ小さく知らせる
+  if (fresh1.length) save((s2) => { for (const a of fresh1) s2.ach[a.id] = 1; });
+  const share = mode === "d" || mode === "h"; // 練習・あとからはシェアしない
   app.innerHTML = `
-    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>${mode === "d" ? `今夜の3星座 #${dayNo(k)}` : mode === "h" ? "上級：見本なし" : "練習"}</small></h1><span></span></header>
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>${mode === "d" ? `今夜の3星座 #${dayNo(k)}` : mode === "h" ? "上級：見本なし" : mode === "a" ? `${md(k)}・あとから` : "練習"}</small></h1><span></span></header>
     <div class="line5" style="${list.length === 1 ? "grid-template-columns:1fr" : ""}">${list.map((ci, j) => `<div>${miniSvg(CONS[ci])}<b>${CONS[ci].n}</b><br>${starStr(starsOf(rec.m[j]))}</div>`).join("")}</div>
-    ${mode !== "p" ? `<div class="share">${text}</div>
+    ${fresh1.length ? `<p class="ach-new">🏅 実績：${fresh1.length > 2 ? `${fresh1[0].name} ほか${fresh1.length - 1}つ` : fresh1.map((a) => a.name).join("・")}</p>` : ""}
+    ${share ? `<div class="share">${text}</div>
     <button class="main" id="share">結果をシェア</button>
     <div class="shares"><a id="toX" target="_blank" rel="noopener">Xで投稿</a><a id="toLine" target="_blank" rel="noopener">LINEで送る</a><button id="copy">コピー</button></div>
     <p class="note">次の星座まで あと <b>${untilNext()}</b></p>` : ""}
     ${mode === "d" && k === todayKey() && !s.hdays[k] ? `<button class="main alt" id="go-h">上級：見本なしで3星座</button>` : ""}
+    ${mode === "a" ? `<p class="note">あとから遊んだ夜は、カレンダーに点線の印で残ります（連続の夜には入りません）。</p><button class="main alt" id="go-cal">カレンダーへ</button>` : ""}
     <div class="row"><button class="sub" id="go-p">${mode === "p" ? "もう一度練習" : "練習する"}</button><button class="sub" id="go-dex">星座帳を見る</button></div>
     ${showKofi ? `<p class="note kofi">楽しめたら、<a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi でコーヒー1杯の応援</a>をもらえると、新しい星座とゲームづくりの励みになります（任意・遊ぶのはずっと無料）。</p>` : ""}
     <p class="note"><a href="${FEEDBACK}" target="_blank" rel="noopener" id="fb">感想を送る</a></p>`;
@@ -359,7 +440,8 @@ function result(mode, k, first, prun) {
   $("go-p").onclick = () => startRun("p");
   $("go-dex").onclick = () => dex();
   if ($("go-h")) $("go-h").onclick = () => (k === todayKey() ? startRun("h") : home()); // 画面を開いたまま0時を過ぎたら、翌日の上級は始めない
-  if (mode !== "p") {
+  if ($("go-cal")) $("go-cal").onclick = () => calendar();
+  if (share) {
     const withUrl = text + "\n" + SITE;
     $("toX").href = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(withUrl);
     $("toLine").href = "https://line.me/R/share?text=" + encodeURIComponent(withUrl);
@@ -377,8 +459,47 @@ function dex() {
   document.querySelectorAll(".dex button").forEach((b) => (b.onclick = () => { const i = +b.dataset.i; if (CONS[i].id in s.dex) startRun("p", i); else toast("今夜の3星座や練習で出会うと載ります"); }));
   bindFooter();
 }
+function achView() {
+  const s = load(), list = achOf(s);
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>実績<small>${list.filter((a) => a.got).length}/${ACH.length}</small></h1><span></span></header>
+    <div class="achs">${list.map((a) => `<div class="ach${a.got ? " got" : ""}"><span class="ic" aria-hidden="true">${a.ic}</span><div><b>${a.name}</b><small>${a.cond}</small></div><div class="pg">${a.got ? "達成" : `${a.n}/${a.g}<i><span style="width:${(a.n / a.g * 100).toFixed(0)}%"></span></i>`}</div></div>`).join("")}</div>${footer()}`;
+  $("back").onclick = home;
+  bindFooter();
+  window.scrollTo(0, 0);
+}
+// 遊んだ日のカレンダー：今夜の3星座の★の合計で色の濃さ・上級は小さな点・あとから遊んだ日は点線・遊べる取りこぼした夜は ↺
+function calendar(ym) {
+  const s = load(), k = todayKey(), first = EPOCH.slice(0, 7), last = k.slice(0, 7);
+  ym = ym && ym >= first && ym <= last ? ym : last;
+  const [y, m] = ym.split("-").map(Number), d0 = new Date(Date.UTC(y, m - 1, 1)), nd = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const miss = missed(s, k), st = streak(s.days), sum = (r) => r.m.reduce((t, x) => t + starsOf(x), 0);
+  const prevYm = new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7), nextYm = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
+  let cells = "";
+  for (let i = 0; i < d0.getUTCDay(); i++) cells += "<span></span>";
+  for (let d = 1; d <= nd; d++) {
+    const key = `${ym}-${String(d).padStart(2, "0")}`, r = s.days[key], a = s.pdays[key], h = s.hdays[key] ? `<i class="h" aria-hidden="true"></i>` : "", td = key === k ? " today" : "";
+    if (r && Array.isArray(r.m)) { const n = sum(r); const f = n / (r.m.length * 3); cells += `<span class="d on${td}" data-k="${key}" style="background:rgba(242,199,107,${(0.3 + 0.7 * f).toFixed(2)})${f < 0.6 ? ";color:var(--ink)" : ""}" aria-label="${m}月${d}日 ★${n}">${d}<small>★${n}</small>${h}</span>`; }
+    else if (a && Array.isArray(a.m)) cells += `<span class="d later${td}" data-k="${key}" aria-label="${m}月${d}日 あとから ★${sum(a)}">${d}<small>★${sum(a)}</small>${h}</span>`;
+    else if (miss.includes(key)) cells += `<button class="d can" data-k="${key}" aria-label="${m}月${d}日をあとから遊ぶ">${d}<small>↺</small></button>`;
+    else cells += `<span class="d${td}">${d}${h}</span>`;
+  }
+  const ra = (d) => (s.runs.a && !doneOf(s.runs.a) && s.runs.a.date === d) || !!(s.apark[d] && !doneOf(s.apark[d])); // 途中まで遊んだ日
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>カレンダー</h1><span></span></header>
+    <div class="calnav"><button class="icon" id="cal-prev" aria-label="前の月"${ym <= first ? " disabled style=\"opacity:.3\"" : ""}>‹</button><b>${y}年${m}月</b><button class="icon" id="cal-next" aria-label="次の月"${ym >= last ? " disabled style=\"opacity:.3\"" : ""}>›</button></div>
+    ${st >= 1 ? `<p class="note" id="cal-st">${st}夜つづけて星を見ています</p>` : ""}
+    <div class="cal">${"日月火水木金土".split("").map((w) => `<span class="wd">${w}</span>`).join("")}${cells}</div>
+    <div class="legend"><span>■ 今夜の3星座（濃いほど★が多い）</span><span>⬚ あとから</span><span>● 上級</span></div>
+    ${miss.length ? `<p class="note">↺ 取りこぼした夜を、あとから遊べます（連続の夜には入りません）</p><div class="misses">${miss.map((d) => `<button class="sub" data-k="${d}">${md(d)}${ra(d) ? " 続き" : ""}</button>`).join("")}</div>` : ""}
+    ${footer()}`;
+  $("back").onclick = home;
+  if (ym > first) $("cal-prev").onclick = () => calendar(prevYm);
+  if (ym < last) $("cal-next").onclick = () => calendar(nextYm);
+  document.querySelectorAll(".cal button.d, .misses button").forEach((b) => (b.onclick = () => startRun("a", b.dataset.k)));
+  bindFooter();
+  window.scrollTo(0, 0);
+}
 
-window.__sz = { CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: (m) => { if (m) MODE = m; play(); }, mode: () => MODE };
+window.__sz = { ACH, achOf, missed, maxStreak, streak, calendar, achView, startRun, CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: (m) => { if (m) MODE = m; play(); }, mode: () => MODE };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
