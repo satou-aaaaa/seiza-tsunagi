@@ -196,14 +196,14 @@ function pick(k, hard) {
   return rest.slice(0, PER);
 }
 
-const fresh = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, tut: false, kofi: {}, ach: {} }); // pdays: あとから遊んだ日の結果（連続の夜・今日の記録には数えない）。ach: 結果の画面で知らせ終えた実績
+const fresh = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, tut: false, kofi: {}, ach: {}, apark: {} }); // pdays: あとから遊んだ日の結果（連続の夜・今日の記録には数えない）。ach: 結果の画面で知らせ終えた実績。apark: あとから遊ぶ日の途中経過を日付ごとに預けておく所（別の日を始めても消さない。戻したら null）
 let MODE = "d"; // 遊んでいるモード。途中経過はモードごとに runs[mode] へ分けて置く（練習で今夜の途中を消さない）
 let mem = null; // 保存できない環境（保存を切ったブラウザなど）では、開いているあいだだけここに置く
 const doneOf = (r) => !!r && r.res.length >= r.list.length, recOf = (r) => ({ m: r.res });
 // 終わった今日・上級の回を日ごとの記録に入れる（結果を見る前に別のタブが次の日を保存しても、終えた日を失わない）
 const bookOf = (s, m) => (m === "d" ? s.days : m === "h" ? s.hdays : m === "a" ? s.pdays : null); // モードごとの日ごとの記録（練習は無し）
 function bank(s, r) { const b = doneOf(r) ? bookOf(s, r.mode) : null; if (!b || b[r.date]) return false; b[r.date] = recOf(r); return true; }
-function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = bookOf(s, r.mode); if (bd && !bd[r.date]) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; bank(s, l); s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y); s.runs[m] = px > py ? x : py > px ? y : n.runs[m]; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
+function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getItem(KEY)); } catch (e) {} try { a = mem !== null ? JSON.parse(mem) : null; } catch (e) {} if (a && a.v !== 1) a = null; if (b && b.v !== 1) b = null; if (!a || !b) return Object.assign(fresh(), a || b || {}); a = Object.assign(fresh(), a); b = Object.assign(fresh(), b); /* 先に両方を補う（古い形の側に無い pdays・ach を統合で落とさない） */ const [n, o] = (a.t || 0) >= (b.t || 0) ? [a, b] : [b, a]; const s = Object.assign(fresh(), n); for (const k in o) { if (k === "runs" || k === "t") continue; const x = o[k], y = n[k]; if (x && y && typeof x === "object" && typeof y === "object") { s[k] = Object.assign({}, x, y); for (const q in x) if (typeof x[q] === "number" && typeof y[q] === "number") s[k][q] = Math.max(x[q], y[q]); } else if (typeof x === "number" && typeof y === "number") s[k] = Math.max(x, y); else if (x === true) s[k] = true; } const ra = a.runs || {}, rb = b.runs || {}, prog = (r) => (r.res ? r.res.length : r.i || 0) * 2 + (r.cur || r.path ? 1 : 0), idOf = (r) => JSON.stringify([r.list || r.tags || null, r.id || null]); s.runs = Object.assign({}, n.runs); for (const m of new Set([...Object.keys(ra), ...Object.keys(rb)])) { const x = ra[m], y = rb[m]; if (x === undefined || y === undefined) { if (x || y) s.runs[m] = x || y; continue; } if (!x || !y) { const r = x || y; if (!r || bank(s, r) || doneOf(r)) continue; const bd = bookOf(s, r.mode); if (bd && !bd[r.date]) s.runs[m] = r; continue; } if (x.date !== y.date) { const [w, l] = x.date > y.date ? [x, y] : [y, x]; if (!bank(s, l) && m === "a" && !doneOf(l) && !s.apark[l.date]) s.apark[l.date] = l; s.runs[m] = w; } else if (idOf(x) === idOf(y)) { const px = prog(x), py = prog(y); s.runs[m] = px > py ? x : py > px ? y : n.runs[m]; } } return s; } // 保存に失敗したあとはメモリと保存の両方を読み、記録（日ごとの結果・帳など）は合わせ、途中経過は新しい方（t が大きい方）を使う
 function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
 const starsOf = (m) => (m === 0 ? 3 : m <= 2 ? 2 : 1);
@@ -291,6 +291,11 @@ function startRun(mode, only) {
     const r = s.runs[mode];
     if (r && r.date === k && mode !== "p") return;
     if (mode === "a" && (s.days[k] || s.pdays[k])) return;
+    if (mode === "a") { // 別の日の途中経過は日付ごとに預け、預けてあった日なら続きから
+      if (r && !doneOf(r)) s.apark[r.date] = r;
+      const old = new Date(Date.parse(todayKey()) - 7 * 864e5).toISOString().slice(0, 10); for (const d in s.apark) if (s.apark[d] && d < old) s.apark[d] = null; // 7日より前の預かりは片づける
+      const p = s.apark[k]; if (p && p.date === k && !doneOf(p)) { s.runs.a = p; s.apark[k] = null; return; }
+    }
     if ((mode === "d" && s.days[k]) || (mode === "h" && s.hdays[k])) return; // 別のタブで今日の分を終えていたら、もう一度は始めない（ホームに戻る）
     let list;
     if (mode === "d" || mode === "a") list = pick(k, false); else if (mode === "h") list = pick(k, true); // あとからも、その日付の種で今夜の3星座と同じ3つ
@@ -477,13 +482,13 @@ function calendar(ym) {
     else if (miss.includes(key)) cells += `<button class="d can" data-k="${key}" aria-label="${m}月${d}日をあとから遊ぶ">${d}<small>↺</small></button>`;
     else cells += `<span class="d${td}">${d}${h}</span>`;
   }
-  const ra = s.runs.a && !doneOf(s.runs.a) ? s.runs.a.date : null;
+  const ra = (d) => (s.runs.a && !doneOf(s.runs.a) && s.runs.a.date === d) || !!(s.apark[d] && !doneOf(s.apark[d])); // 途中まで遊んだ日
   app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>カレンダー</h1><span></span></header>
     <div class="calnav"><button class="icon" id="cal-prev" aria-label="前の月"${ym <= first ? " disabled style=\"opacity:.3\"" : ""}>‹</button><b>${y}年${m}月</b><button class="icon" id="cal-next" aria-label="次の月"${ym >= last ? " disabled style=\"opacity:.3\"" : ""}>›</button></div>
     ${st >= 1 ? `<p class="note" id="cal-st">${st}夜つづけて星を見ています</p>` : ""}
     <div class="cal">${"日月火水木金土".split("").map((w) => `<span class="wd">${w}</span>`).join("")}${cells}</div>
     <div class="legend"><span>■ 今夜の3星座（濃いほど★が多い）</span><span>⬚ あとから</span><span>● 上級</span></div>
-    ${miss.length ? `<p class="note">↺ 取りこぼした夜を、あとから遊べます（連続の夜には入りません）</p><div class="misses">${miss.map((d) => `<button class="sub" data-k="${d}">${md(d)}${ra === d ? " 続き" : ""}</button>`).join("")}</div>` : ""}
+    ${miss.length ? `<p class="note">↺ 取りこぼした夜を、あとから遊べます（連続の夜には入りません）</p><div class="misses">${miss.map((d) => `<button class="sub" data-k="${d}">${md(d)}${ra(d) ? " 続き" : ""}</button>`).join("")}</div>` : ""}
     ${footer()}`;
   $("back").onclick = home;
   if (ym > first) $("cal-prev").onclick = () => calendar(prevYm);
