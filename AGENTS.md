@@ -35,6 +35,7 @@ node qa/run.mjs   # 星のデータ（本物の向き・色・線）・今夜の
 - PWA（`manifest.webmanifest`・`sw.js`・`icon-*.png`）：画面のファイルを足したら `sw.js` の `SHELL` にも足し、中身を大きく変えたら `CACHE` の版を上げる。アイコンは `node tools/make-icons.cjs`、SNS 用の絵 `og.png` は `node tools/make-og.cjs`。
 - 引き継ぎコード（別の端末へ記録を移す）：`transfer.js`・`qa/transfer-check.mjs` は shared-workflows の `template/` の写し（ここで直さない。直すときはひな形を直して配り、`引き継ぎの版` を上げる）。`index.html` の script の `data-keys` は記録のキーだけを書く。記録の形を変えたら `qa/run.mjs` の `checkTransfer` の `sample` も合わせる。sw.js の `SHELL` から `./transfer.js` を外さない（shared-workflows `routines/game-dev.md`「引き継ぎコード」）。
 - 公開リポジトリなので、個人情報・鍵を入れない。
+- 見やすさ：`</head>` の前の見やすさの設定（`<!-- a11y:begin -->`〜`end`）は shared-workflows `template/a11y/a11y.html` の写しで、ここでは直さない。`qa/a11y.mjs` も `template/qa/a11y.mjs` の写し（画面の足し方・許しは `qa/a11y.json` に理由つき）。色だけで分けない（見本のまだの線は点線・まちがいの線は破線と「✕」の知らせ・ヒントの輪は破線・取れなかった星は ☆・何つ目かの点は高さと中の空き。「色の見分けを助ける」ではまちがい＝朱・ヒント＝空色）・コントラスト 4.5:1・知らせは `#live`（role=status）・決めつけの言葉を使わない（shared-workflows `routines/game-dev.md`「だれでも遊べるように」）。夜空の星は role=button で Tab・矢印・Enter でも線を引け、名前は「星N・場所・明るさ・選んでいる/ヒント/つないだ」（星座の星かどうか・星の名前は言わない。並びは上から下の順で、星座の星が先に来ない）。
 - 同じ日はどの端末でも同じ問題にする：乱数は `sort` の比較の中で引かない（引く回数がブラウザで変わる。2026-11-04 路線図ひと筆で CodeRabbit が指摘。QA が見る）。少し遅れて動く処理（setTimeout）は、画面が替わっていたら何もしない。
 
 ## 公開
