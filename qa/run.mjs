@@ -355,9 +355,64 @@ try {
     check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", bad.length === 0, bad.join(","));
     await pf.close();
   } catch (e) { check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", false, e.message.split("\n")[0]); }
+  try { // だれでも遊べるように（shared-workflows routines/game-dev.md A1・A6・A7）：色だけで分けない・キーボードだけで遊べる・知らせを文字で
+    const pk = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    pk.on("pageerror", (e) => errors.push(e.message));
+    await pk.goto(url); await pk.evaluate(() => localStorage.clear()); await pk.reload();
+    await pk.click("#howto-ok"); await pk.click("#go-d");
+    const C = (await st(pk)).C, live = () => pk.textContent("#live");
+    const order = await pk.evaluate(() => [...document.querySelectorAll("#svg g.st")].map((g) => +g.dataset.i));
+    check("夜空の星はどれも role=button・tabindex・名前（場所と明るさ）を持つ", order.length === C.pts.length && await pk.evaluate(() => [...document.querySelectorAll("#svg g.st")].every((g) => g.getAttribute("role") === "button" && g.tabIndex === 0 && /^星\d+・/.test(g.getAttribute("aria-label")))));
+    check("星のキーボードの順は上から下の順で、星座の星（先頭 main 個）が先に並ばない", order.slice(0, C.main).some((i) => i >= C.main) && new Set(order).size === C.pts.length, order.slice(0, C.main).join(","));
+    check("星の名前に星座の星の名前（ベテルギウスなど）を出さない", await pk.evaluate(() => { const { C } = window.__sz.state(); return [...document.querySelectorAll("#svg g.st")].every((g) => !C.pts.some((p) => p[4] && g.getAttribute("aria-label").includes(p[4]))); }));
+    // キーボードだけで1本引く：Tab で星へ、Enter で選ぶ → 2つ目へ focus して Enter
+    const [a, b] = C.lines[0];
+    await pk.focus(`#s${a}`); await pk.keyboard.press("Enter"); await pk.waitForTimeout(80);
+    check("Enter で星を選ぶと、名前に「選んでいる」が付き、知らせに出る", (await pk.getAttribute(`#s${a}`, "aria-label")).includes("選んでいる") && (await pk.getAttribute(`#s${a}`, "aria-pressed")) === "true" && (await live()).includes("選びました"));
+    await pk.focus(`#s${b}`); await pk.keyboard.press(" ");
+    let s = await st(pk);
+    check("キーボード（Enter・スペース）だけで線が引ける（なぞらなくても遊べる。WCAG 2.1.1・2.5.7）", s.drawn.length === 1 && (await pk.getAttribute(`#s${a}`, "aria-label")).includes("線でつないだ"));
+    await pk.waitForTimeout(80);
+    check("線をつなぐと知らせ（role=status）に文字で出る", /線をつなぎました（1\/\d+）/.test(await live()), await live());
+    check("見本のまだの線は点線・引いた線は実線（色だけで分けない。WCAG 1.4.1）", (await pk.locator("#guide line[stroke-dasharray]").count()) === C.lines.length - 1 && (await pk.locator('#guide line[stroke="#f2c76b"]:not([stroke-dasharray])').count()) === 1);
+    { const r = await pk.evaluate(() => [...document.querySelectorAll(".dots i")].map((i) => [i.className, i.getBoundingClientRect().height, getComputedStyle(i).borderTopWidth]));
+      check("何つ目かの点は形でも分かる（いまの点は高い・まだの点は中が空）", r.length === 3 && r[0][1] > r[1][1] && parseFloat(r[1][2]) >= 1, JSON.stringify(r)); }
+    { const k = await pk.focus(`#s${a}`).then(() => pk.keyboard.press("ArrowRight")).then(() => pk.evaluate(() => document.activeElement.closest("g.st") ? +document.activeElement.dataset.i : -1));
+      const ok = await pk.evaluate(([a, k]) => { const { C } = window.__sz.state(); return k >= 0 && k !== a && C.pts[k][0] > C.pts[a][0]; }, [a, k]);
+      const anyRight = await pk.evaluate((a) => { const { C } = window.__sz.state(); return C.pts.some((q) => q[0] > C.pts[a][0] + 0.001); }, a);
+      check("矢印キーで、その向きにある星へ移れる", ok || !anyRight, `${a}→${k}`); }
+    // まちがい：文字と破線でも分かる
+    const notLine = await pk.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
+    await pk.focus(`#s${notLine[0]}`); await pk.keyboard.press("Enter"); await pk.focus(`#s${notLine[1]}`); await pk.keyboard.press("Enter");
+    await pk.waitForTimeout(80);
+    const badDash = await pk.evaluate(() => { const l = document.querySelector("#lines .bad"); return l ? getComputedStyle(l).strokeDasharray : ""; });
+    check("まちがいは赤い色だけでなく、破線と ✕ の文字でも知らせる（role=status にも）", (await st(pk)).miss === 1 && badDash && badDash !== "none" && (await live()).includes("✕") && (await pk.locator(".toast").first().textContent()).includes("✕"), badDash);
+    await pk.click("#hint"); await pk.waitForTimeout(80);
+    const hlDash = await pk.evaluate(() => getComputedStyle(document.querySelector(".hl")).strokeDasharray);
+    check("ヒントの輪は破線（選んだ星の実線の輪と形で分かる）・どの星かを読み上げにも出す", hlDash !== "none" && (await pk.locator('#svg g.st[aria-label*="ヒントの星"]').count()) === 2 && /ヒント：.*星\d+と星\d+/.test(await live()), hlDash);
+    for (const l of C.lines) await pk.evaluate((l) => window.__sz.connect(...l), l);
+    await pk.waitForTimeout(80);
+    check("完成の知らせ（星座の名前・星の数）が role=status に文字で出る", (await live()).includes(C.n) && /星\dつ/.test(await live()), await live());
+    check("取れなかった星は ☆（色の薄さだけで分けない）", /☆/.test(await pk.textContent(".verdict .stars .off")) && !/★/.test(await pk.textContent(".verdict .stars .off")));
+    check("問題（星座の名前と見ごろ）に読み上げの印 data-a11y-say", (await pk.locator(".cname [data-a11y-say]").count()) === 1);
+    // 動きを減らす：振動しない・すべるスクロールにしない
+    await pk.evaluate(() => { window.__vib = 0; navigator.vibrate = () => { window.__vib++; return true; }; localStorage.setItem("a11y-v1", JSON.stringify({ calm: true })); });
+    await pk.reload(); await pk.click("#go-d").catch(() => {});
+    if (await pk.locator("#next").count()) await pk.click("#next");
+    await pk.evaluate(() => { window.__vib = 0; navigator.vibrate = () => { window.__vib++; return true; }; });
+    const C2 = (await st(pk)).C; await pk.evaluate((l) => window.__sz.connect(...l), C2.lines[0]);
+    check("「動きを減らす」では振動させない（navigator.vibrate を呼ばない）", (await pk.evaluate(() => window.__vib)) === 0 && /calm\(\)\) return; try \{ navigator\.vibrate/.test(html) && /behavior: calm\(\) \? "auto"/.test(html));
+    await pk.close();
+  } catch (e) { check("だれでも遊べるように（色だけで分けない・キーボード・知らせ）の検査が最後まで動く", false, e.message.split("\n")[0]); }
   await browser.close();
 }
 check("画面のエラーが無い", errors.length === 0, errors.slice(0, 3).join(" | "));
+
+{ // 見やすさ・読みやすさ・偏り（shared-workflows template/qa/a11y.mjs の写し。routines/game-dev.md「だれでも遊べるように」）
+  const { spawnSync } = await import("node:child_process");
+  const a = spawnSync(process.execPath, [path.join(root, "qa", "a11y.mjs")], { encoding: "utf8", env: process.env });
+  check("見やすさ・読みやすさの検査（qa/a11y.mjs。中身は qa-report/a11y.md）", a.status === 0, (a.stdout.match(/^- ❌.*$/gm) || []).join(" / ") || (a.status ? a.stderr.slice(-300) : ""));
+}
 
 const ng = results.filter((r) => !r.ok);
 const md = `# 星座つなぎ QA\n\n${results.map((r) => `- ${r.ok ? "✅" : "❌"} ${r.name}${r.detail ? `（${r.detail}）` : ""}`).join("\n")}\n\n${ng.length ? `❌ ${ng.length}件` : `✅ ${results.length}項目すべて通過`}\n`;
