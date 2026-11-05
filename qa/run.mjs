@@ -36,7 +36,7 @@ check("README の URL のすぐ後ろに全角の字を続けない（Link check
 const ext = [...html.matchAll(/(?:src|href)="(https?:[^"]+)"/g)].map((m) => m[1]).filter((u) => !/^https:\/\/fonts\.googleapis\.com(\/|$)|^https:\/\/ko-fi\.com\/satouaaaaa$/.test(u));
 check("外から読むのは文字（Google Fonts）だけ。スクリプト・広告・解析を入れない", ext.length === 0, ext.join(","));
 check("CSP で通信先を自分だけにしている", /connect-src 'self'/.test(html) && !/connect-src[^;"]*https/.test(html));
-check("Math.random は練習の星座選びだけ", (html.match(/Math\.random/g) || []).length === 1);
+check("Math.random は練習・とことんの星座選びだけ（今夜の3星座・上級は日付の乱数）", (html.match(/Math\.random/g) || []).length === 2);
 check("画面にお笑いの言葉を入れない（本物っぽく）", !/お笑い|ギャグ|ボケ|ツッコミ|なんでやねん|（うそ）/.test(html));
 { const og = (k) => (html.match(new RegExp(`<meta (?:property|name)="${k}" content="([^"]+)"`)) || [])[1] || "";
   const png = readFileSync(path.join(root, "og.png"));
@@ -139,6 +139,7 @@ try {
   check("3星座で結果・シェアの文は番号と星だけ（星座名は出さない）", /星座つなぎ #\d+/.test(share) && (share.match(/[★☆]/g) || []).length === 9 && !(await page.evaluate(() => window.__sz.CONS.some((c) => document.querySelector(".share").textContent.includes(c.n)))));
   check("X・LINE は押したときに開くリンクだけ", /^https:\/\/twitter\.com\/intent\/tweet\?text=/.test(await page.getAttribute("#toX", "href")) && /^https:\/\/line\.me\/R\/share\?text=/.test(await page.getAttribute("#toLine", "href")));
   check("まちがいのあった日は Ko-fi のひとことを出さない", (await page.locator(".kofi").count()) === 0);
+  check("今夜の3星座の結果に「続けて遊ぶ：とことん」の大きなボタン", (await page.locator("#go-e.main").count()) === 1);
   await page.click("#back");
   check("ホームで連続1夜・今日の結果を見るに変わる", (await page.textContent(".stats")).includes("1連続の夜") && (await page.textContent("#go-d")).includes("今日の結果"));
   // 上級：見本なし・まちがいなしなら Ko-fi
@@ -157,6 +158,37 @@ try {
   check("練習は記録の夜を増やさず、シェアと Ko-fi を出さない", (await page.evaluate(() => Object.keys(window.__sz.load().days).length)) === days && (await page.locator(".kofi, #share").count()) === 0);
   await page.close();
 
+  { // とことん：次々に出る・線の少ない星座から多い星座へ・2周目は見本なし・まちがいとヒントで🎫を使う・降りると自己ベスト（2026-11-05 satou さん「一日で遊べる量が少なすぎる」）
+    const pe = await newPage(); await pe.click("#howto-ok");
+    const L = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 500; r++) { const L = g.endlessList(); if (L.length !== n * 2) return "長さ" + L.length; for (const lap of [L.slice(0, n), L.slice(n)]) { if (new Set(lap).size !== n) return "同じ星座が同じ周に2度"; const t = lap.map((i) => g.ETIER(g.CONS[i])); if (t.some((x, i) => i && x < t[i - 1])) return "難しさが下がる"; } } const a = g.endlessList().join(), b = g.endlessList().join(); return a === b ? "毎回同じ並び" : "ok"; });
+    check("とことんの並び（500回）：全部の星座を線の少ない順の組から1回ずつ・2周目は見本なし・毎回ちがう並び", L === "ok", L);
+    check("ホームに「とことん」の大きなボタン", (await pe.locator("#go-e.main").count()) === 1);
+    await pe.click("#go-e");
+    for (let r = 0; r < 2; r++) { const L = (await st(pe)).C.lines; for (const l of L) await pe.evaluate((l) => window.__sz.connect(...l), l); await pe.click("#next"); }
+    check("とことんは何つ目かを出し、🎫が3枚", (await pe.textContent("header")).includes("3つ目") && (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 3 && (await pe.locator("#guide svg").count()) === 1);
+    const bad = await pe.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
+    await pe.evaluate((b) => window.__sz.connect(...b), bad);
+    check("とことんのまちがいは🎫を1枚使う", (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 2);
+    await pe.click("#hint");
+    check("とことんのヒントも🎫を1枚使う", (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 1 && (await pe.locator(".hl").count()) === 2 && (await pe.textContent("#life")).startsWith("🎫"));
+    await pe.reload(); await pe.click("#go-e");
+    check("とことんは途中で閉じても続きから（3つ目・🎫1のまま）", (await pe.textContent("header")).includes("3つ目") && (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 1);
+    await pe.click("#quit");
+    check("降りるとつないだ数と自己ベスト更新が出て、記録に残る（今日の記録・連続には入らない）", (await pe.textContent("#eres")).includes("2星座") && (await pe.textContent("#ebest")).includes("自己ベスト更新") && (await pe.evaluate(() => { const s = window.__sz.load(); return s.ebest === 2 && !s.runs.e && Object.keys(s.days).length === 0 && Object.keys(s.dex).length >= 2; })));
+    check("とことんの終わりにシェア・Ko-fi を出さない", (await pe.locator("#share, .kofi").count()) === 0);
+    await pe.click("#go-e"); await pe.click("#quit");
+    check("ベストに届かないと、ベストと「あと何で更新」を出し、ベストは下げない", (await pe.textContent("#ebest")).includes("あと3で更新") && (await pe.evaluate(() => window.__sz.load().ebest)) === 2);
+    await pe.click("#back");
+    check("ホームのとことんのボタンに自己ベスト", (await pe.textContent("#go-e")).includes("自己ベスト 2"));
+    await pe.click("#go-e");
+    await pe.evaluate(() => { const g = window.__sz, s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.e.res = Array(g.CONS.length).fill(0); s.runs.e.life = 0; localStorage.setItem("seiza-v1", JSON.stringify(s)); }); await pe.click("#back"); await pe.click("#go-e");
+    check("とことんの2周目は見本なし", (await pe.textContent("header")).includes("見本なし") && (await pe.locator("#guide svg").count()) === 0);
+    check("🎫が無いとヒントは押せない", await pe.locator("#hint").isDisabled());
+    const bad2 = await pe.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
+    await pe.evaluate((b) => window.__sz.connect(...b), bad2);
+    const n = await pe.evaluate(() => window.__sz.CONS.length);
+    check("🎫が無いときにまちがえると終わり、そこまでの数が自己ベストになる", (await pe.locator("#eout").count()) === 1 && (await pe.textContent("#eres")).includes(`${n}星座`) && (await pe.evaluate(() => window.__sz.load().ebest)) === n);
+    await pe.close(); }
   for (const w of [320, 390]) {
     const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
