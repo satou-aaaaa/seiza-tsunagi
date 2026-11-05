@@ -155,6 +155,8 @@ html.a11y-cvd .hl{stroke:#56B4E9;stroke-width:6;stroke-dasharray:6 6}
 html.a11y-cvd .sel{stroke:#E69F00;stroke-width:6}
 html.a11y-cvd .dots i.done{background:#56B4E9;border-color:#56B4E9}
 </style>
+<!-- 引き継ぎコード（shared-workflows template/transfer.js の写し）。ゲームの script より前に置く -->
+<script src="transfer.js" data-game="seiza-tsunagi" data-keys="seiza-v1"></script>
 <!-- a11y:begin 見やすさの設定 v4（shared-workflows template/a11y/a11y.html の写し。ここでは直さず、ひな形を直して全部のゲームへ写す。drift-check と qa/a11y.mjs が同じ中身か見る） -->
 <style id="a11y-css">
 /* だれでも：キーボードで選んだ所に太い枠（WCAG 2.4.7・2.4.13） */
@@ -402,7 +404,7 @@ const calm = () => !!(window.A11y && A11y.on("calm"));
 function say(t) { const l = $("live"); if (!l) return; l.textContent = ""; setTimeout(() => { l.textContent = t; }, 30); } // 読み上げソフトへの知らせ（文字で）
 function toast(t) { say(t); document.querySelectorAll(".toast").forEach((x) => x.remove()); /* 重ねて出さない */ const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
 const buzz = (ms = 10) => { if (calm()) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
-const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" data-a11y-open>見やすさ</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" data-a11y-open>見やすさ</a><a href="#" data-hk>引き継ぎ</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
 $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
