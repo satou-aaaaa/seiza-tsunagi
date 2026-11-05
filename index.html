@@ -48,8 +48,9 @@ button.sub:disabled{opacity:.4;cursor:default}
 .note{color:var(--muted);font-size:13px;line-height:1.6;margin:0;text-align:center}
 .note a{color:var(--gold);display:inline-flex;align-items:center;min-height:44px}
 .dots{display:flex;gap:6px;flex:1;max-width:140px}
-.dots i{flex:1;height:6px;border-radius:3px;background:var(--line)}
-.dots i.on{background:var(--gold)}.dots i.done{background:#c9d3f5}
+.dots{align-items:center}
+.dots i{flex:1;height:6px;border-radius:3px;box-sizing:border-box;border:1.5px solid var(--muted);background:transparent}
+.dots i.on{background:var(--gold);border-color:var(--gold);height:12px}.dots i.done{background:#c9d3f5;border-color:#c9d3f5}
 .cname{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
 .cname b{font-family:var(--f-disp);font-size:28px;letter-spacing:.08em;font-weight:900;line-height:1.1}
 .cname small{display:block;color:var(--muted);font-size:12px}
@@ -60,10 +61,10 @@ button.sub:disabled{opacity:.4;cursor:default}
 .tw{animation:tw 3.2s ease-in-out infinite}
 @keyframes tw{0%,100%{opacity:1}50%{opacity:.55}}
 .cl{stroke:var(--gold);stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 0 6px #f2c76b99)}
-.bad{stroke:var(--bad);stroke-width:5;stroke-linecap:round;opacity:.9}
+.bad{stroke:var(--bad);stroke-width:5;stroke-linecap:round;opacity:.9;stroke-dasharray:14 10}
 #band{stroke:#ffffffaa;stroke-width:3;stroke-dasharray:8 8;stroke-linecap:round}
 .sel{fill:none;stroke:var(--gold);stroke-width:3}
-.hl{fill:none;stroke:#9fe3ff;stroke-width:4;animation:blink .6s ease-in-out 4}
+.hl{fill:none;stroke:#9fe3ff;stroke-width:4;stroke-dasharray:10 7;animation:blink .6s ease-in-out 4}.hl.still{animation:none}
 @keyframes blink{50%{opacity:.1}}
 .nm{fill:#ffe9b0;font-size:30px;font-family:var(--f-body);font-weight:700;paint-order:stroke;stroke:#060a18;stroke-width:6px}
 .status{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted)}
@@ -74,9 +75,9 @@ button.sub:disabled{opacity:.4;cursor:default}
 .verdict b{font-family:var(--f-disp);font-size:26px}
 .verdict .note{color:#5a5f74}
 .stars{color:#d9a227;letter-spacing:.1em;font-size:22px}
-.stars .off{color:#0000002b}
+.stars .off{color:#0000006e}
 .sky .stars,.dex .stars{color:var(--gold)}
-.dex .stars .off,.line5 .stars .off{color:#ffffff2b}
+.dex .stars .off,.line5 .stars .off{color:#ffffff73}
 .title{font-family:var(--f-disp);font-weight:900;font-size:42px;letter-spacing:.16em;text-align:center;margin:6px 0 0}
 .lead{text-align:center;color:var(--muted);margin:0;font-size:14px;line-height:1.7}
 .tonight{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted);text-align:center}
@@ -101,7 +102,7 @@ dialog h2{font-family:var(--f-disp);margin:0 0 10px}
 dialog ol{padding-left:1.3em;margin:0 0 12px;line-height:1.8}
 dialog p{margin:0 0 10px;font-size:14px;line-height:1.7;color:#4a4f66}
 dialog a{color:#8a5d00;min-height:44px;display:inline-flex;align-items:center}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f6f1e3;color:#1b1f33;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #000a}
+.toast{pointer-events:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#f6f1e3;color:#1b1f33;padding:10px 16px;border-radius:10px;font-weight:700;z-index:9;box-shadow:0 6px 20px #000a}
 .hint{background:var(--panel);border:1px solid var(--gold);border-radius:12px;padding:10px 12px;font-size:14px;text-align:center}
 /* つないだ手ごたえ：線が星から星へ伸び、両はしの星に輪がともる。完成すると星座の星が順に光る */
 .cl.new{animation:draw .28s ease-out}
@@ -144,10 +145,164 @@ footer a{color:var(--muted);min-height:44px;display:inline-flex;align-items:cent
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 /* all:unset のボタン（カレンダーのます目など）でも枠が消えないよう、いちばん最後に強く書く（2026-11-04 CodeRabbit） */
 :is(button,a):focus-visible{outline:2px solid var(--gold)!important;outline-offset:2px}
+/* 星もキーボードで選べる（Tab・矢印・Enter）。選んだ星には水色の輪 */
+.sky g.st{outline:none!important;cursor:pointer}
+.sky g.st:focus-visible>circle:last-child{stroke:#9fe3ff;stroke-width:7}
+.sr-only{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* 色の見分けを助ける（カラーユニバーサルデザインの組）：まちがいの線は朱の破線、ヒントの輪は空色の破線、選んだ星は太い輪、見本のまだの線は点線を太く */
+html.a11y-cvd .bad{stroke:#D55E00;stroke-dasharray:6 8;stroke-width:7;opacity:1}
+html.a11y-cvd .hl{stroke:#56B4E9;stroke-width:6;stroke-dasharray:6 6}
+html.a11y-cvd .sel{stroke:#E69F00;stroke-width:6}
+html.a11y-cvd .dots i.done{background:#56B4E9;border-color:#56B4E9}
 </style>
+<!-- a11y:begin 見やすさの設定 v4（shared-workflows template/a11y/a11y.html の写し。ここでは直さず、ひな形を直して全部のゲームへ写す。drift-check と qa/a11y.mjs が同じ中身か見る） -->
+<style id="a11y-css">
+/* だれでも：キーボードで選んだ所に太い枠（WCAG 2.4.7・2.4.13） */
+:is(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:3px solid #1a5fd0!important;outline-offset:2px!important;box-shadow:0 0 0 5px #fff!important}
+/* 読みやすい文字：UD フォント・行間 1.7・字間を少し広げる・斜体にしない（BDA Dyslexia Style Guide） */
+html.a11y-read body{line-height:1.7}
+html.a11y-read body,html.a11y-read body :where(*:not(svg):not(svg *):not([data-a11y-keepfont]):not([data-a11y-keepfont] *)){font-family:"BIZ UDPGothic","BIZ UDGothic","UD デジタル 教科書体 NK-R","UD Digi Kyokasho NK-R","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI",Meiryo,sans-serif!important;font-style:normal!important}
+html.a11y-read :is(p,li,dd,dt,blockquote,[data-a11y-say]){line-height:1.8!important;letter-spacing:.04em!important}
+html.a11y-read em,html.a11y-read i:not([aria-hidden]){font-style:normal!important;font-weight:700}
+/* 動きを減らす：揺れ・点滅・すべる動きを止める（WCAG 2.3.3。端末の「視差効果を減らす」でも自動で入る） */
+html.a11y-calm *,html.a11y-calm *::before,html.a11y-calm *::after{animation-duration:.001ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.001ms!important;transition-delay:0s!important;scroll-behavior:auto!important}
+/* 色の見分けを助ける：ゲームごとの形・模様は各ゲームが html.a11y-cvd の下に書く。ここではリンクに下線 */
+html.a11y-cvd a{text-decoration:underline!important}
+/* ふりがな：ゲームが <ruby class="a11y-rb"> を置いた所だけ。選んだときだけ出す */
+html:not(.a11y-ruby) ruby.a11y-rb>rt{display:none}
+/* 設定の画面（どのゲームでも同じ見た目・同じ濃さ。白地に黒で 15:1） */
+.a11y-dlg{max-width:min(420px,calc(100vw - 32px));width:100%;box-sizing:border-box;border:2px solid #1d2320;border-radius:14px;padding:18px 16px 14px;background:#fffdf8;color:#1d2320;font:500 16px/1.6 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;letter-spacing:0}
+.a11y-dlg::backdrop{background:#0008}
+.a11y-dlg h2{font-size:19px;margin:0 0 4px;font-weight:700;line-height:1.4}
+.a11y-dlg p{margin:4px 0 10px;font-size:14px;color:#3d4440;line-height:1.6}
+.a11y-dlg label{display:flex;gap:12px;align-items:center;min-height:48px;padding:6px 4px;border-top:1px solid #1d232022;cursor:pointer;line-height:1.4}
+.a11y-dlg label small{display:block;font-size:13px;color:#3d4440}
+.a11y-dlg input[type=checkbox]{width:26px;height:26px;flex:none;accent-color:#1a5fd0;margin:0}
+.a11y-dlg .a11y-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.a11y-dlg button,.a11y-btn,.a11y-saybtn{min-height:44px;min-width:44px;border-radius:10px;border:2px solid #1d2320;background:#fff;color:#1d2320;font:700 15px/1.2 "BIZ UDPGothic","Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;padding:0 14px;cursor:pointer;letter-spacing:0}
+.a11y-dlg button.a11y-ok{background:#1d2320;color:#fff}
+.a11y-btn.a11y-float{position:fixed;left:max(8px,env(safe-area-inset-left,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:2147483000}
+/* 読み上げボタンが、いちばん下のボタン・リンクにかぶらないよう下をあける */
+html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}
+.a11y-saybtn{position:fixed;right:max(8px,env(safe-area-inset-right,0px));bottom:max(8px,env(safe-area-inset-bottom,0px));z-index:2147483000;box-shadow:0 2px 8px #0003}
+.a11y-saybtn[hidden],.a11y-dlg [hidden]{display:none!important}
+.a11y-note{font-size:13px!important}
+</style>
+<script id="a11y-script">
+/* 見やすさの設定（色覚・ディスレクシア・弱視・動きに弱い人のため）。外へは何も送らない。
+   設定は localStorage の a11y-v1 に置く。同じサイト（satou-aaaaa.github.io）のゲームは同じ設定を使う。
+   ゲームの側でできること：
+   - 設定を開くボタンに data-a11y-open を付ける（無ければ左下に「Aa」のボタンを出す）
+   - 読み上げる文に data-a11y-say を付ける（問題文・知らせなど）
+   - 色の見分けを助ける形・模様は html.a11y-cvd の下に CSS で書く。JS では A11y.on('cvd')
+   - 揺れ・すべる動きを JS で動かすときは、A11y.on('calm') なら止める
+   - 設定が変わると document に a11ychange が届く
+   - 設定の印は html の class「a11y-<設定の名前>」（a11y-read など）。部品の class はこれと重ならない名前にする（2026-11-05 a11y-say がボタンとぶつかった） */
+(() => {
+  const KEY = "a11y-v1";
+  const root = document.documentElement;
+  const OPTS = [
+    ["read", "読みやすい文字", "UD フォント・行間と字間を広く"],
+    ["cvd", "色の見分けを助ける", "色に形・模様・記号を足す"],
+    ["calm", "動きを減らす", "揺れ・点滅・すべる動きを止める"],
+    ["say", "読み上げのボタンを出す", "問題や知らせを声で読む（端末の中の声だけ）"],
+    ["ruby", "ふりがなを出す", "むずかしい漢字に読みを付ける"],
+  ];
+  const media = (q) => { try { return matchMedia(q).matches; } catch { return false; } };
+  let S = {};
+  try { S = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch { S = {}; }
+  // 決めていないものは端末の設定に合わせる（視差効果を減らす → 動きを減らす）
+  const on = (k) => (k in S ? !!S[k] : k === "calm" ? media("(prefers-reduced-motion: reduce)") : false);
+  let fontLoaded = false;
+  const loadFont = () => {
+    if (fontLoaded) return; fontLoaded = true;
+    // Google Fonts を許しているページだけ取りに行く（許していなければ端末にある UD フォントを使う）
+    const csp = (document.querySelector('meta[http-equiv="Content-Security-Policy"]') || {}).content || "";
+    if (csp && !/fonts\.googleapis\.com/.test(csp)) return;
+    const l = document.createElement("link");
+    l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap";
+    document.head.appendChild(l);
+  };
+  const apply = () => {
+    for (const [k] of OPTS) root.classList.toggle("a11y-" + k, on(k));
+    if (on("read")) loadFont();
+    if (sayBtn) sayBtn.hidden = !on("say");
+    if (!on("say")) stop();
+  };
+  const set = (k, v) => {
+    S[k] = !!v;
+    try { localStorage.setItem(KEY, JSON.stringify(S)); } catch { /* 保存できなくても今の画面には効かせる */ }
+    apply();
+    document.dispatchEvent(new CustomEvent("a11ychange", { detail: { key: k, on: !!v } }));
+  };
+
+  // 読み上げ：端末の中の日本語の声だけを使う（外へ文字を送る声は使わない）
+  const voice = () => { try { return speechSynthesis.getVoices().find((v) => /^ja/i.test(v.lang) && v.localService) || null; } catch { return null; } };
+  const stop = () => { try { speechSynthesis.cancel(); } catch { /* 無い端末 */ } };
+  const visible = (el) => { const r = el.getBoundingClientRect(); const cs = getComputedStyle(el); return r.width > 0 && r.height > 0 && cs.visibility !== "hidden" && !el.closest("[hidden],[aria-hidden=true],[inert]"); };
+  const textOf = (sel) => [...document.querySelectorAll(sel)].filter(visible).map((el) => (el.getAttribute("aria-label") || el.innerText || "").trim()).filter(Boolean).join("。");
+  // data-a11y-say が無い画面では、見出しと知らせの場所を読む（2026-11-05 何も読まれず設定が開くだけだった）
+  const sayText = () => textOf("[data-a11y-say]") || textOf("h1,h2,[role=status],[aria-live]");
+  const say = (text) => {
+    const v = voice();
+    if (!v || !text) return false;
+    stop();
+    const u = new SpeechSynthesisUtterance(text.slice(0, 600));
+    u.voice = v; u.lang = v.lang; u.rate = 0.95;
+    speechSynthesis.speak(u);
+    return true;
+  };
+
+  let dlg = null, sayBtn = null, lastFocus = null;
+  const build = () => {
+    dlg = document.createElement("dialog");
+    dlg.className = "a11y-dlg";
+    dlg.setAttribute("aria-labelledby", "a11y-h");
+    const hasRuby = !!document.querySelector("ruby.a11y-rb");
+    dlg.innerHTML = `<h2 id="a11y-h">見やすさ・読みやすさ</h2><p>ほかのゲームにも同じ設定が使われます。文字は2本の指で広げると大きくなります。</p>` +
+      OPTS.filter(([k]) => k !== "ruby" || hasRuby).map(([k, n, d]) => `<label><input type="checkbox" data-k="${k}"><span>${n}<small>${d}</small></span></label>`).join("") +
+      `<p class="a11y-note" id="a11y-novoice" hidden>この端末には、外へ送らずに読める日本語の声がありません。</p><div class="a11y-row"><button type="button" class="a11y-ok" data-a11y-close>閉じる</button></div>`;
+    document.body.appendChild(dlg);
+    dlg.addEventListener("change", (e) => {
+      const k = e.target.dataset && e.target.dataset.k;
+      if (!k) return;
+      set(k, e.target.checked);
+      if (k === "say") dlg.querySelector("#a11y-novoice").hidden = !(e.target.checked && !voice());
+    });
+    dlg.querySelector("[data-a11y-close]").addEventListener("click", () => dlg.close());
+    dlg.addEventListener("close", () => { if (lastFocus && lastFocus.focus) lastFocus.focus(); });
+    sayBtn = document.createElement("button");
+    sayBtn.type = "button"; sayBtn.className = "a11y-saybtn"; sayBtn.textContent = "🔊 読む"; sayBtn.setAttribute("aria-label", "画面の問題を読み上げる");
+    sayBtn.addEventListener("click", () => {
+      try { if (speechSynthesis.speaking) return stop(); } catch { /* 無い端末 */ }
+      if (!say(sayText())) open();
+    });
+    document.body.appendChild(sayBtn);
+    if (!document.querySelector("[data-a11y-open]")) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "a11y-btn a11y-float"; b.textContent = "Aa"; b.setAttribute("data-a11y-open", ""); b.setAttribute("aria-label", "見やすさの設定");
+      document.body.appendChild(b);
+    }
+    document.addEventListener("click", (e) => { const t = e.target.closest && e.target.closest("[data-a11y-open]"); if (t) { e.preventDefault(); open(); } });
+    apply();
+  };
+  const open = () => {
+    if (!dlg) build();
+    lastFocus = document.activeElement;
+    for (const c of dlg.querySelectorAll("input[data-k]")) c.checked = on(c.dataset.k);
+    dlg.querySelector("#a11y-novoice").hidden = !(on("say") && !voice());
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+  };
+  apply();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", build); else build();
+  window.A11y = { on, set, open, say, stop };
+})();
+</script>
+<!-- a11y:end -->
 </head>
 <body>
 <div class="wrap" id="app"></div>
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
 <dialog id="howto" aria-labelledby="howto-t">
   <h2 id="howto-t">遊び方</h2>
   <ol>
@@ -155,7 +310,9 @@ footer a{color:var(--muted);min-height:44px;display:inline-flex;align-items:cent
     <li>星から星へ指をすべらせて離すか、2つの星を順に押すと線が引けます。</li>
     <li>見本の線を全部引けば完成。まちがえると★が減ります。</li>
   </ol>
+  <p>キーボードでは、Tab か矢印で星を選び、Enter で押せます。</p>
   <p>星の位置・明るさ・色は本物の星のカタログから。今夜見ごろの星座が出ます。時間制限はありません。</p>
+  <p><a href="#" data-a11y-open>見やすさの設定</a>（読みやすい文字・色の見分け・動きを減らす・読み上げ）</p>
   <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
   <button class="main" id="howto-ok" style="width:100%">わかった</button>
 </dialog>
@@ -214,7 +371,7 @@ function load() { let a = null, b = null; try { b = JSON.parse(localStorage.getI
 function save(fn) { const s = load(); fn(s); s.t = Math.max(Date.now(), (s.t || 0) + 1); const j = JSON.stringify(s); try { localStorage.setItem(KEY, j); mem = null; } catch (e) { mem = j; } return s; }
 function streak(days) { let k = todayKey(), n = 0; if (!days[k]) k = prevDay(k); while (days[k]) { n++; k = prevDay(k); } return n; }
 const starsOf = (m) => (m === 0 ? 3 : m <= 2 ? 2 : 1);
-const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"★".repeat(3 - s)}</span></span>`;
+const starStr = (s) => `<span class="stars" aria-label="星${s}つ">${"★".repeat(s)}<span class="off">${"☆".repeat(3 - s)}</span></span>`;
 const RANKS = [[0, "星見習い"], [5, "星読み"], [12, "星案内人"], [19, "星の博士"]];
 const rankOf = (n) => RANKS.filter(([x]) => n >= x).pop()[1];
 // 実績：いまの記録から毎回数える（腕前・集める・続けるをまぜる）。[id, 絵, 名前, 条件, (記録) => [いま, 目標]]
@@ -241,9 +398,11 @@ const ACH = [
 const achOf = (s) => ACH.map(([id, ic, name, cond, f]) => { const [n, g] = f(s); return { id, ic, name, cond, n: Math.min(n, g), g, got: n >= g }; });
 // 取りこぼした夜：きのうから7日前までで、今夜の3星座を遊んでいない日（始めた日 EPOCH より前は出さない）
 function missed(s, k = todayKey()) { const out = []; let d = k; for (let i = 0; i < 7; i++) { d = prevDay(d); if (d < EPOCH) break; if (!s.days[d] && !s.pdays[d]) out.push(d); } return out; }
-function toast(t) { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
-const buzz = (ms = 10) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
-const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
+const calm = () => !!(window.A11y && A11y.on("calm"));
+function say(t) { const l = $("live"); if (!l) return; l.textContent = ""; setTimeout(() => { l.textContent = t; }, 30); } // 読み上げソフトへの知らせ（文字で）
+function toast(t) { say(t); document.querySelectorAll(".toast").forEach((x) => x.remove()); /* 重ねて出さない */ const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
+const buzz = (ms = 10) => { if (calm()) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" data-a11y-open>見やすさ</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
 $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
@@ -251,9 +410,14 @@ $("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.re
 // 色温度から星の色（おおよそ）
 function kColor(k) { const t = Math.max(2500, Math.min(15000, k)); if (t < 4000) return "#ffb38a"; if (t < 5200) return "#ffd2a1"; if (t < 6300) return "#fff1d6"; if (t < 8000) return "#f4f6ff"; if (t < 11000) return "#d6e2ff"; return "#b9cdff"; }
 const rOf = (v) => Math.max(4, 17 - v * 2.6);
+// 星の場所と明るさを言葉に（読み上げ用。星座の星かどうかは言わない）
+const spot = (p) => [["左上", "上", "右上"], ["左", "まん中", "右"], ["左下", "下", "右下"]][p[1] < 0.42 ? 0 : p[1] < 0.83 ? 1 : 2][p[0] < 0.34 ? 0 : p[0] < 0.67 ? 1 : 2];
+const glow = (v) => (v < 1.5 ? "とても明るい" : v < 3 ? "明るい" : v < 4.2 ? "ふつうの" : "暗い");
 function starsSvg(c, opt = {}) {
-  return c.pts.map((p, i) => { const r = rOf(p[2]) * (opt.scale || 1), col = kColor(p[3]);
-    return `<g id="s${opt.pre || ""}${i}"><circle cx="${p[0] * S}" cy="${p[1] * S}" r="${(r * 2.6).toFixed(1)}" fill="${col}" opacity=".18"/><circle class="${p[2] < 1.6 && !opt.still ? "tw" : ""}" cx="${p[0] * S}" cy="${p[1] * S}" r="${r.toFixed(1)}" fill="${col}" style="animation-delay:-${(i * 0.37) % 3}s"/></g>`; }).join("");
+  // 遊ぶ夜空（opt.keys）では、星を上から下・左から右の順に並べてキーボードで選べるようにする（並びで星座の星が分からないように）
+  const order = c.pts.map((_, i) => i); if (opt.keys) order.sort((a, b) => (Math.round(c.pts[a][1] * 8) - Math.round(c.pts[b][1] * 8)) || (c.pts[a][0] - c.pts[b][0]));
+  return order.map((i, n) => { const p = c.pts[i], r = rOf(p[2]) * (opt.scale || 1), col = kColor(p[3]);
+    return `<g id="s${opt.pre || ""}${i}"${opt.keys ? ` class="st" data-i="${i}" data-l="星${n + 1}・${spot(p)}の${glow(p[2])}星" role="button" tabindex="0" aria-label="星${n + 1}・${spot(p)}の${glow(p[2])}星"` : ""}><circle cx="${p[0] * S}" cy="${p[1] * S}" r="${(r * 2.6).toFixed(1)}" fill="${col}" opacity=".18"/><circle class="${p[2] < 1.6 && !opt.still ? "tw" : ""}" cx="${p[0] * S}" cy="${p[1] * S}" r="${r.toFixed(1)}" fill="${col}" style="animation-delay:-${(i * 0.37) % 3}s"/></g>`; }).join("");
 }
 const lineSvg = (c, [a, b], cls) => `<line class="${cls}" x1="${c.pts[a][0] * S}" y1="${c.pts[a][1] * S}" x2="${c.pts[b][0] * S}" y2="${c.pts[b][1] * S}"/>`;
 function guideSvg(c) { // 見本：星座の線だけ（位置は同じ）
@@ -272,8 +436,8 @@ function home() {
   app.innerHTML = `
     <div class="sky" aria-hidden="true" style="width:62%;margin:0 auto">${miniSvg(hero)}</div>
     <h1 class="title">星座つなぎ</h1>
-    <p class="lead">本物の星空から星座の星を見つけて、線でつなぐ。<br>今夜見ごろの1日3星座。</p>
-    <div class="tonight">今夜9時ごろの見ごろ　<b>${season.join("・")}</b></div>
+    <p class="lead" data-a11y-say>本物の星空から星座の星を見つけて、線でつなぐ。<br>今夜見ごろの1日3星座。</p>
+    <div class="tonight" data-a11y-say>今夜9時ごろの見ごろ　<b>${season.join("・")}</b></div>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m) => "★".repeat(starsOf(m))).join("　")}</div>` : ""}
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${rd.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
     ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
@@ -318,22 +482,22 @@ function startRun(mode, only) {
   play();
 }
 
-let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false, at = null; // at: この画面が何番目のどの星座か（古いタブの書き込みを止める）
+let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false, at = null, hl = new Set(), hintL = []; // at: この画面が何番目のどの星座か（古いタブの書き込みを止める）。hintL: ヒントで教えた線、hl: そのうちまだ引いていない線の星（輪を残し、読み上げでも知らせる）
 const lkey = (a, b) => (a < b ? a + "-" + b : b + "-" + a);
 function play() {
   const s = load(), run = s.runs[MODE];
   if (!run) return home();
   const i = run.res.length;
   if (i >= run.list.length) return finish();
-  C = CONS[run.list[i]]; at = { i, c: run.list[i], date: run.date, id: run.id }; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false;
+  C = CONS[run.list[i]]; at = { i, c: run.list[i], date: run.date, id: run.id }; drawn = new Set(); miss = 0; hints = 0; sel = null; finished = false; hl = new Set(); hintL = [];
   const blind = blindAt(run, i), label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : run.mode === "a" ? `あとから ${md(run.date)}` : run.mode === "e" ? `とことん${blind ? "・見本なし" : ""}` : "練習";
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
-      ${run.mode === "e" ? `<span class="life" id="life" aria-label="🎫 のこり ${run.life}">${lifeStr(run.life)}</span><span style="font-size:13px;color:var(--muted)">${label} ${i + 1}つ目${s.ebest ? `（ベスト ${s.ebest}）` : ""}</span></header>` : `${run.list.length > 1 ? `<div class="dots">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
+      ${run.mode === "e" ? `<span class="life" id="life" aria-label="🎫 のこり ${run.life}">${lifeStr(run.life)}</span><span style="font-size:13px;color:var(--muted)">${label} ${i + 1}つ目${s.ebest ? `（ベスト ${s.ebest}）` : ""}</span></header>` : `${run.list.length > 1 ? `<div class="dots" aria-hidden="true">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
       <span style="font-size:13px;color:var(--muted)">${label} ${i + 1}/${run.list.length}</span></header>`}
-    <div class="cname"><div><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
+    <div class="cname"><div data-a11y-say><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
       <div class="guide" id="guide">${blind ? `<div style="display:grid;place-items:center;height:100%;color:var(--muted);font-size:12px">見本なし</div>` : guideSvg(C)}</div></div>
-    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C)}<g id="lit"></g><g id="marks"></g></svg></div>
+    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg" role="group" aria-label="夜空。星を2つ順に選ぶと線を引きます（Tab・矢印で星を選び、Enter で決める）"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C, { keys: true })}<g id="lit"></g><g id="marks"></g></svg></div>
     <div class="status"><span>線</span><span class="bar"><i id="lbar"></i></span><span id="lnum"></span></div>
     <div class="row"><button class="sub" id="hint">ヒント${run.mode === "e" ? "（🎫1）" : ""}</button><button class="sub" id="skip">線を消す</button></div>
     ${run.mode === "e" ? `<p class="note">まちがい・ヒント1回で🎫を1枚使います。🎫が無いときにまちがえると終わりです。</p>` : ""}
@@ -343,15 +507,18 @@ function play() {
   $("back").onclick = home;
   $("hint").onclick = hint;
   if ($("quit")) $("quit").onclick = () => finish();
-  $("skip").onclick = () => { if (finished) return; drawn = new Set(); $("lines").innerHTML = ""; $("lit").innerHTML = ""; paint(); };
+  $("skip").onclick = () => { if (finished) return; drawn = new Set(); $("lines").innerHTML = ""; $("lit").innerHTML = ""; paint(); say("線を全部消しました"); };
   bindSky();
   paint();
   window.scrollTo(0, 0);
 }
 function paint() {
   $("lnum").textContent = `${drawn.size} / ${C.lines.length}`; $("lbar").style.width = (drawn.size / C.lines.length * 100) + "%";
-  document.querySelectorAll("#guide line").forEach((l) => l.setAttribute("stroke", drawn.has(l.dataset.k) ? "#f2c76b" : "#6f7aa3")); // 見本も、引いた線は金・まだの線は灰色（残りがひと目で分かる）
-  if (!finished) $("marks").innerHTML = sel != null ? `<circle class="sel" cx="${C.pts[sel][0] * S}" cy="${C.pts[sel][1] * S}" r="26"/>` : "";
+  document.querySelectorAll("#guide line").forEach((l) => { const on = drawn.has(l.dataset.k), w = parseFloat(l.getAttribute("stroke-width")); l.setAttribute("stroke", on ? "#f2c76b" : "#6f7aa3"); if (on) l.removeAttribute("stroke-dasharray"); else l.setAttribute("stroke-dasharray", `${w * 0.6} ${w * 1.6}`); }); // 見本も、引いた線は金の実線・まだの線は灰色の点線（色だけでなく形でも残りが分かる）
+  hl = new Set(hintL.filter(([a, b]) => !drawn.has(lkey(a, b))).flat());
+  if (!finished) $("marks").innerHTML = [...hl].map((i) => `<circle class="hl still" data-i="${i}" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="30"/>`).join("") + (sel != null ? `<circle class="sel" cx="${C.pts[sel][0] * S}" cy="${C.pts[sel][1] * S}" r="26"/>` : "");
+  const used = new Set([...drawn].flatMap((k) => k.split("-").map(Number)));
+  document.querySelectorAll("#svg g.st").forEach((g) => { const i = +g.dataset.i; g.setAttribute("aria-label", g.dataset.l + (i === sel ? "（選んでいる）" : "") + (hl.has(i) ? "（ヒントの星）" : "") + (used.has(i) ? "（線でつないだ）" : "")); g.setAttribute("aria-pressed", i === sel ? "true" : "false"); });
   $("skip").disabled = !drawn.size || finished; $("hint").disabled = finished || (MODE === "e" && lifeOf() <= 0);
 }
 const lifeStr = (n) => "🎫".repeat(Math.max(0, n)) + `<span class="off">${"🎫".repeat(Math.max(0, ELIFE - n))}</span>`;
@@ -372,15 +539,15 @@ function nearest(ev) {
 function connect(a, b) {
   if (finished || a == null || b == null || a === b) return;
   const k = lkey(a, b);
-  if (drawn.has(k)) return;
+  if (drawn.has(k)) { say("その線はもう引いてあります"); return; }
   if (C.lines.some(([x, y]) => lkey(x, y) === k)) {
     drawn.add(k); $("lines").insertAdjacentHTML("beforeend", lineSvg(C, [a, b], "cl new").replace("<line ", '<line pathLength="1" ')); buzz();
     const on = new Set([...$("lit").querySelectorAll("circle")].map((e) => +e.dataset.i)); // つないだ星に輪をともす（初めてつないだ星だけ、ふわっと）
     for (const i of [a, b]) if (!on.has(i)) $("lit").insertAdjacentHTML("beforeend", `<circle class="lit new" data-i="${i}" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="${(rOf(C.pts[i][2]) + 9).toFixed(1)}"/>`);
-    if (drawn.size === C.lines.length) complete();
+    if (drawn.size === C.lines.length) complete(); else say(`線をつなぎました（${drawn.size}/${C.lines.length}）`);
   } else {
     if (MODE === "e") { const t = useTicket(); if (t === false) { toast("別の画面で先に進んでいます"); return play(); } if (t === "out") { finished = true; buzz(80); return finish("out"); } } // 🎫が無いときのまちがいで終わり
-    miss++; buzz(40);
+    miss++; buzz(40); toast("✕ その2つは線になりません");
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.innerHTML = lineSvg(C, [a, b], "bad"); $("lines").appendChild(g); setTimeout(() => g.remove(), 450);
   }
   paint();
@@ -395,18 +562,37 @@ function bindSky() {
     band.setAttribute("visibility", "hidden");
     const to = e.type === "pointerup" ? nearest(e).i : null;
     if (from != null && moved) { if (to != null && to !== from) connect(from, to); sel = null; paint(); }
-    else if (from != null) { if (sel == null) sel = from; else if (sel === from) sel = null; else { connect(sel, from); sel = null; } paint(); }
+    else if (from != null) tap(from);
     from = null;
   };
+  // キーボード：Tab・矢印で星を選び、Enter・スペースで「押す」と同じ（なぞらなくても遊べる。WCAG 2.1.1・2.5.7）
+  $("svg").onkeydown = (e) => {
+    const g = e.target.closest && e.target.closest("g.st"); if (!g || finished) return;
+    const i = +g.dataset.i;
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tap(i); const n = $("s" + i); if (n && !finished) n.focus(); return; }
+    const dir = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (!dir) return;
+    e.preventDefault();
+    const p = C.pts[i]; let best = null, bd = Infinity;
+    C.pts.forEach((q, j) => { const dx = q[0] - p[0], dy = q[1] - p[1], ahead = dx * dir[0] + dy * dir[1]; if (j === i || ahead <= 0.001) return; const side = Math.abs(dx * dir[1] - dy * dir[0]), d = ahead + side * 2; if (d < bd) { bd = d; best = j; } });
+    if (best != null) $("s" + best).focus();
+  };
+}
+// 星を1つ押した（指でもキーボードでも）：1つ目は選ぶ、同じ星でやめる、2つ目で線を引く
+function tap(i) {
+  if (finished || i == null) return;
+  if (sel == null) { sel = i; say(`${$("s" + i).dataset.l.split("・")[0]}を選びました。もう1つの星を選ぶと線を引きます`); }
+  else if (sel === i) { sel = null; say("選ぶのをやめました"); }
+  else { const a = sel; sel = null; connect(a, i); }
+  paint();
 }
 function hint() {
   if (finished) return;
   if (MODE === "e") { const t = useTicket(); if (t !== true) return paint(); }
   const rest = C.lines.filter(([a, b]) => !drawn.has(lkey(a, b)));
   const pref = rest.find(([a, b]) => [...drawn].some((k) => k.split("-").map(Number).some((x) => x === a || x === b))) || rest[0];
-  hints++;
-  $("marks").insertAdjacentHTML("beforeend", pref.map((i) => `<circle class="hl" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="30"/>`).join(""));
-  toast("光った2つの星をつなぐ");
+  hints++; hintL.push(pref); paint();
+  $("marks").querySelectorAll(".hl.still").forEach((e) => { if (pref.includes(+e.getAttribute("data-i"))) e.classList.remove("still"); });
+  toast(`ヒント：光った2つの星をつなぐ（${pref.map((i) => document.querySelector(`#s${i}`).dataset.l.split("・")[0]).join("と")}）`);
 }
 function complete() {
   const same = sameAt;
@@ -419,10 +605,11 @@ function complete() {
   $("sky").classList.add("won"); // 完成：星座の星が順に光る
   $("lit").insertAdjacentHTML("beforeend", C.pts.slice(0, C.main).map((p, i) => `<circle class="pop" cx="${p[0] * S}" cy="${p[1] * S}" r="20" style="animation-delay:${i * 70}ms"/>`).join(""));
   const r = s.runs[MODE], last = r && r.res.length >= r.list.length;
-  $("after").innerHTML = `<div class="verdict" role="status"><b>${C.n}</b>${starStr(st)}<p class="note">${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}　見ごろ：${bestMonth(C)}月の夜9時ごろ、${where(C)}</p><button class="main" id="next">${last ? "結果を見る" : "次の星座へ"}</button></div>`;
+  $("after").innerHTML = `<div class="verdict"><b>${C.n}</b>${starStr(st)}<p class="note">${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}　見ごろ：${bestMonth(C)}月の夜9時ごろ、${where(C)}</p><button class="main" id="next">${last ? "結果を見る" : "次の星座へ"}</button></div>`;
   $("next").onclick = play;
+  say(`${C.n} 完成。星${st}つ。${miss ? `まちがい${miss}回` : "まちがいなし"}${hints ? `・ヒント${hints}回` : ""}`);
   if ($("quit")) $("quit").textContent = `ここで降りる（${r ? r.res.length : at.i}星座で終える）`;
-  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: calm() ? "auto" : "smooth", block: "nearest" }), 50);
 }
 function finish(why) {
   const s = load(), run = s.runs[MODE];
@@ -447,7 +634,7 @@ function endFinish(run, why) {
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>とことん</small></h1><span></span></header>
     ${why === "out" ? `<p class="note" id="eout">🎫が無いときにまちがえたので、ここまで</p>` : all ? `<p class="note" id="eout">全部の星座を見本なしまでつなぎました</p>` : ""}
-    <p class="big" id="eres">${n}星座 つないだ</p>
+    <p class="big" id="eres" data-a11y-say>${n}星座 つないだ</p>
     <p class="note" id="ebest">${best ? "🎉 自己ベスト更新！" : `自己ベスト ${s.ebest}${s.ebest >= n ? `（あと${s.ebest - n + 1}で更新）` : ""}`}</p>
     ${fresh1.length ? `<p class="ach-new">🏅 実績：${fresh1.length > 2 ? `${fresh1[0].name} ほか${fresh1.length - 1}つ` : fresh1.map((a) => a.name).join("・")}</p>` : ""}
     ${n ? `<div class="line5">${run.list.slice(0, n).map((ci, j) => `<div>${miniSvg(CONS[ci])}<b>${CONS[ci].n}</b><br>${starStr(starsOf(run.res[j]))}</div>`).join("")}</div>` : ""}
@@ -469,7 +656,7 @@ function result(mode, k, first, prun) {
   if (fresh1.length) save((s2) => { for (const a of fresh1) s2.ach[a.id] = 1; });
   const share = mode === "d" || mode === "h"; // 練習・あとからはシェアしない
   app.innerHTML = `
-    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>${mode === "d" ? `今夜の3星座 #${dayNo(k)}` : mode === "h" ? "上級：見本なし" : mode === "a" ? `${md(k)}・あとから` : "練習"}</small></h1><span></span></header>
+    <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1 data-a11y-say>星座つなぎ<small>${mode === "d" ? `今夜の3星座 #${dayNo(k)}` : mode === "h" ? "上級：見本なし" : mode === "a" ? `${md(k)}・あとから` : "練習"}</small></h1><span></span></header>
     <div class="line5" style="${list.length === 1 ? "grid-template-columns:1fr" : ""}">${list.map((ci, j) => `<div>${miniSvg(CONS[ci])}<b>${CONS[ci].n}</b><br>${starStr(starsOf(rec.m[j]))}</div>`).join("")}</div>
     ${fresh1.length ? `<p class="ach-new">🏅 実績：${fresh1.length > 2 ? `${fresh1[0].name} ほか${fresh1.length - 1}つ` : fresh1.map((a) => a.name).join("・")}</p>` : ""}
     ${share ? `<div class="share">${text}</div>
@@ -499,7 +686,7 @@ function result(mode, k, first, prun) {
 }
 function dex() {
   const s = load();
-  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座帳<small>${Object.keys(s.dex).length}/${CONS.length}</small></h1><span></span></header>
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1 data-a11y-say>星座帳<small>${Object.keys(s.dex).length}/${CONS.length}</small></h1><span></span></header>
     <p class="note">つないだ星座が集まります。押すとその星座だけ練習できます。</p>
     <div class="dex">${CONS.map((c, i) => (c.id in s.dex ? `<button data-i="${i}" aria-label="${c.n}">${miniSvg(c)}<b>${c.n}</b><br>${starStr(s.dex[c.id])}<br><small style="color:var(--muted)">${bestMonth(c)}月</small></button>` : `<button data-i="${i}" aria-label="まだの星座"><div class="unk">？</div><small style="color:var(--muted)">${bestMonth(c)}月ごろ</small></button>`)).join("")}</div>${footer()}`;
   $("back").onclick = home;
@@ -508,7 +695,7 @@ function dex() {
 }
 function achView() {
   const s = load(), list = achOf(s);
-  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>実績<small>${list.filter((a) => a.got).length}/${ACH.length}</small></h1><span></span></header>
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1 data-a11y-say>実績<small>${list.filter((a) => a.got).length}/${ACH.length}</small></h1><span></span></header>
     <div class="achs">${list.map((a) => `<div class="ach${a.got ? " got" : ""}"><span class="ic" aria-hidden="true">${a.ic}</span><div><b>${a.name}</b><small>${a.cond}</small></div><div class="pg">${a.got ? "達成" : `${a.n}/${a.g}<i><span style="width:${(a.n / a.g * 100).toFixed(0)}%"></span></i>`}</div></div>`).join("")}</div>${footer()}`;
   $("back").onclick = home;
   bindFooter();
@@ -531,7 +718,7 @@ function calendar(ym) {
     else cells += `<span class="d${td}">${d}${h}</span>`;
   }
   const ra = (d) => (s.runs.a && !doneOf(s.runs.a) && s.runs.a.date === d) || !!(s.apark[d] && !doneOf(s.apark[d])); // 途中まで遊んだ日
-  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>カレンダー</h1><span></span></header>
+  app.innerHTML = `<header><button class="icon" id="back" aria-label="ホームへ">←</button><h1 data-a11y-say>カレンダー</h1><span></span></header>
     <div class="calnav"><button class="icon" id="cal-prev" aria-label="前の月"${ym <= first ? " disabled style=\"opacity:.3\"" : ""}>‹</button><b>${y}年${m}月</b><button class="icon" id="cal-next" aria-label="次の月"${ym >= last ? " disabled style=\"opacity:.3\"" : ""}>›</button></div>
     ${st >= 1 ? `<p class="note" id="cal-st">${st}夜つづけて星を見ています</p>` : ""}
     <div class="cal">${"日月火水木金土".split("").map((w) => `<span class="wd">${w}</span>`).join("")}${cells}</div>
