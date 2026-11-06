@@ -90,6 +90,7 @@ try {
   check("はじめて開くと遊び方が出る", await page.locator("#howto[open]").count() === 1);
   await page.click("#howto-ok");
   check("遊ぶ前の画面に Ko-fi のひとことが無い", (await page.locator(".kofi").count()) === 0);
+  check("Ko-fi へのリンクは結果の1行と下の欄（footer）だけ（遊ぶ前・遊び方に出さない）", await page.evaluate(() => [...document.querySelectorAll('a[href*="ko-fi.com"]')].every((a) => a.closest("footer") || a.closest(".kofi"))));
   check("感想を送るリンクがある", (await page.getAttribute("#f-fb", "href")) === "https://github.com/satou-aaaaa/seiza-tsunagi/issues/new?template=feedback.yml");
   await page.click("#go-d");
   let s = await st(page);
@@ -159,21 +160,24 @@ try {
   check("練習は記録の夜を増やさず、シェアと Ko-fi を出さない", (await page.evaluate(() => Object.keys(window.__sz.load().days).length)) === days && (await page.locator(".kofi, #share").count()) === 0);
   await page.close();
 
-  { // とことん：次々に出る・線の少ない星座から多い星座へ・2周目は見本なし・まちがいとヒントで🎫を使う・降りると自己ベスト（2026-11-05 satou さん「一日で遊べる量が少なすぎる」）
+  { // とことん：次々に出る・線の少ない星座から多い星座へ・2周目は見本なし・まちがいとヒントで終わらない・降りると自己ベスト（2026-11-05「一日で遊べる量が少なすぎる」、2026-11-06 satou さん「好きなだけ遊んでほしい」でチケットを外した）
     const pe = await newPage(); await pe.click("#howto-ok");
-    const L = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 500; r++) { const L = g.endlessList(); if (L.length !== n * 2) return "長さ" + L.length; for (const lap of [L.slice(0, n), L.slice(n)]) { if (new Set(lap).size !== n) return "同じ星座が同じ周に2度"; const t = lap.map((i) => g.ETIER(g.CONS[i])); if (t.some((x, i) => i && x < t[i - 1])) return "難しさが下がる"; } } const a = g.endlessList().join(), b = g.endlessList().join(); return a === b ? "毎回同じ並び" : "ok"; });
-    check("とことんの並び（500回）：全部の星座を線の少ない順の組から1回ずつ・2周目は見本なし・毎回ちがう並び", L === "ok", L);
+    const L = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 500; r++) { const av = r % n, L = g.endlessList(av); if (L.length !== n * 2) return "長さ" + L.length; if (L[0] === av) return "前の回の最後と同じ星座から始まる"; for (const lap of [L.slice(0, n), L.slice(n)]) { if (new Set(lap).size !== n) return "同じ星座が同じ周に2度"; const t = lap.map((i) => g.ETIER(g.CONS[i])); if (t.some((x, i) => i && x < t[i - 1])) return "難しさが下がる"; } for (let i = 1; i < L.length; i++) if (L[i] === L[i - 1]) return "同じ星座が続けて出る"; } const a = g.endlessList().join(), b = g.endlessList().join(); return a === b ? "毎回同じ並び" : "ok"; });
+    check("とことんの並び（500回）：全部の星座を線の少ない順の組から1回ずつ・2周目は見本なし・毎回ちがう並び・前の回の最後の星座から始めない", L === "ok", L);
+    const P = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 300; r++) { const seen = {}, out = []; let t = 1; for (let k = 0; k < Math.ceil(n / 3); k++) { const p = g.practicePick(seen); if (p.length !== 3 || new Set(p).size !== 3) return "3つでない"; p.forEach((c) => { seen[c] = t++; }); out.push(...p); } if (new Set(out.slice(0, n)).size !== n) return "全部の星座を出す前に同じ星座が出た"; } return "ok"; });
+    check("練習（300回）：全部の星座を出すまで同じ星座を出さない", P === "ok", P);
     check("ホームに「とことん」の大きなボタン", (await pe.locator("#go-e.main").count()) === 1);
+    check("ページに🎫・「…すると開く」が無い", await pe.evaluate(() => !/🎫|すると開く|で開く/.test(document.documentElement.outerHTML)));
     await pe.click("#go-e");
     for (let r = 0; r < 2; r++) { const L = (await st(pe)).C.lines; for (const l of L) await pe.evaluate((l) => window.__sz.connect(...l), l); await pe.click("#next"); }
-    check("とことんは何つ目かを出し、🎫が3枚", (await pe.textContent("header")).includes("3つ目") && (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 3 && (await pe.locator("#guide svg").count()) === 1);
-    const bad = await pe.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
-    await pe.evaluate((b) => window.__sz.connect(...b), bad);
-    check("とことんのまちがいは🎫を1枚使う", (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 2);
-    await pe.click("#hint");
-    check("とことんのヒントも🎫を1枚使う", (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 1 && (await pe.locator(".hl").count()) === 2 && (await pe.textContent("#life")).startsWith("🎫"));
+    check("とことんは何つ目かを出し、🎫が無い", (await pe.textContent("header")).includes("3つ目") && !(await pe.textContent("body")).includes("🎫") && (await pe.locator("#guide svg").count()) === 1);
+    const badOf = () => pe.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
+    for (let r = 0; r < 5; r++) { const b = await badOf(); await pe.evaluate((b) => window.__sz.connect(...b), b); }
+    check("とことんは5回まちがえても終わらない", (await pe.locator("#eres").count()) === 0 && (await pe.evaluate(() => window.__sz.state().miss)) === 5);
+    for (let r = 0; r < 4; r++) { if (await pe.locator("#hint").isDisabled()) break; await pe.click("#hint"); }
+    check("とことんのヒントは何度でも押せて、終わらない", (await pe.evaluate(() => window.__sz.state().hints)) >= 3 && (await pe.locator("#eres").count()) === 0 && (await pe.locator(".hl").count()) >= 2);
     await pe.reload(); await pe.click("#go-e");
-    check("とことんは途中で閉じても続きから（3つ目・🎫1のまま）", (await pe.textContent("header")).includes("3つ目") && (await pe.evaluate(() => window.__sz.load().runs.e.life)) === 1);
+    check("とことんは途中で閉じても続きから（3つ目のまま）", (await pe.textContent("header")).includes("3つ目"));
     await pe.click("#quit");
     check("降りるとつないだ数と自己ベスト更新が出て、記録に残る（今日の記録・連続には入らない）", (await pe.textContent("#eres")).includes("2星座") && (await pe.textContent("#ebest")).includes("自己ベスト更新") && (await pe.evaluate(() => { const s = window.__sz.load(); return s.ebest === 2 && !s.runs.e && Object.keys(s.days).length === 0 && Object.keys(s.dex).length >= 2; })));
     check("とことんの終わりにシェア・Ko-fi を出さない", (await pe.locator("#share, .kofi").count()) === 0);
@@ -183,12 +187,17 @@ try {
     check("ホームのとことんのボタンに自己ベスト", (await pe.textContent("#go-e")).includes("自己ベスト 2"));
     await pe.click("#go-e");
     await pe.evaluate(() => { const g = window.__sz, s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.e.res = Array(g.CONS.length).fill(0); s.runs.e.life = 0; localStorage.setItem("seiza-v1", JSON.stringify(s)); }); await pe.click("#back"); await pe.click("#go-e");
-    check("とことんの2周目は見本なし", (await pe.textContent("header")).includes("見本なし") && (await pe.locator("#guide svg").count()) === 0);
-    check("🎫が無いとヒントは押せない", await pe.locator("#hint").isDisabled());
-    const bad2 = await pe.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
-    await pe.evaluate((b) => window.__sz.connect(...b), bad2);
+    check("とことんの2周目は見本なし（前の版の🎫0の途中経過でも開け、ヒントを押せる）", (await pe.textContent("header")).includes("見本なし") && (await pe.locator("#guide svg").count()) === 0 && !(await pe.locator("#hint").isDisabled()));
     const n = await pe.evaluate(() => window.__sz.CONS.length);
-    check("🎫が無いときにまちがえると終わり、そこまでの数が自己ベストになる", (await pe.locator("#eout").count()) === 1 && (await pe.textContent("#eres")).includes(`${n}星座`) && (await pe.evaluate(() => window.__sz.load().ebest)) === n);
+    await pe.evaluate((n) => { const g = window.__sz, s = JSON.parse(localStorage.getItem("seiza-v1")); s.runs.e.res = Array(2 * n - 1).fill(0); localStorage.setItem("seiza-v1", JSON.stringify(s)); }, n); await pe.click("#back"); await pe.click("#go-e");
+    { const b = await badOf(); await pe.evaluate((b) => window.__sz.connect(...b), b); }
+    { const L = (await st(pe)).C.lines; for (const l of L) await pe.evaluate((l) => window.__sz.connect(...l), l); }
+    const ext = await pe.evaluate(() => { const r = window.__sz.load().runs.e; return { len: r.list.length, res: r.res.length, adj: r.list.some((c, i) => i && c === r.list[i - 1]) }; });
+    check("とことんは全部の星座を見本なしまでつないでも終わらず、新しい並びを足す（つなぎ目で同じ星座を続けない）", ext.len === 4 * n && ext.res === 2 * n && !ext.adj && (await pe.textContent("#next")).includes("次の星座"), JSON.stringify(ext));
+    await pe.click("#next");
+    check("足した並びの1周目は見本あり", !(await pe.textContent("header")).includes("見本なし") && (await pe.locator("#guide svg").count()) === 1 && (await pe.evaluate((n) => window.__sz.blindAt({ mode: "e" }, 3 * n) && !window.__sz.blindAt({ mode: "e" }, 2 * n), n)));
+    await pe.click("#quit");
+    check("降りると、そこまでの数が自己ベストになり、まちがい・ヒントの回数を出す", (await pe.textContent("#eres")).includes(`${2 * n}星座`) && (await pe.evaluate(() => window.__sz.load().ebest)) === 2 * n && (await pe.textContent("#emiss")).includes("1回"));
     await pe.close(); }
   for (const w of [320, 390]) {
     const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
@@ -235,7 +244,12 @@ try {
     await pn.evaluate(() => { const g = window.__sz, k = new Date(Date.parse(g.todayKey()) - 864e5).toISOString().slice(0, 10); localStorage.setItem("seiza-v1", JSON.stringify({ v: 1, tut: true, days: {}, hdays: {}, dex: {}, cnt: 0, clean: 0, kofi: {}, runs: { d: { mode: "d", date: k, list: g.pick(k, false), res: [0, 0, 0] } } })); });
     await pn.reload();
     check("前の日に終えて閉じても、翌日に開くとその日の記録がつく", await pn.evaluate(() => { const g = window.__sz; return !!g.load().days[new Date(Date.parse(g.todayKey()) - 864e5).toISOString().slice(0, 10)] && !g.load().runs.d; }));
-    check("前の日の結果の画面からは、今日の上級を始められない（今日の分を先に）", !(await pn.locator("#go-h").count()));
+    check("前の日の結果の画面には、今日の上級のボタンを出さない（前の日の結果と取り違えない）", !(await pn.locator("#go-h").count()));
+    await pn.click("#back");
+    check("上級は今日の分の前でも、ホームから始められる（🔒で開くモードにしない。2026-11-06 satou さん「好きなだけ遊んでほしい」）", (await pn.locator("#go-h").count()) === 1 && (await pn.textContent("#go-h")).includes("上級"));
+    await pn.click("#go-h");
+    check("今日の分の前に始めた上級は見本なしで1つ目から", (await pn.evaluate(() => window.__sz.mode())) === "h" && (await pn.textContent("header")).includes("1/3") && (await pn.locator("#guide svg").count()) === 0);
+    await pn.click("#back"); await pn.evaluate(() => { const s = JSON.parse(localStorage.getItem("seiza-v1")); delete s.runs.h; localStorage.setItem("seiza-v1", JSON.stringify(s)); }); // 後の検査のため、始めた上級を片づける
     check("保存に失敗したあと別のタブが新しく保存していたら、古いメモリで上書きせずそちらを読む", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(); mem = JSON.stringify(Object.assign({}, s0, { t: 1, tagA: 1 })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 2, tagB: 1 }))); const r = g.load(); mem = null; return !!r.tagB && !r.tagA; }, "seiza-v1"));
     check("保存に失敗したあと別のタブが保存しても、両方の記録（日ごとの結果）を残す", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(); mem = JSON.stringify(Object.assign({}, s0, { t: 5, days: { "2000-01-01": s0.days[Object.keys(s0.days)[0]] || 1 } })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 9, days: { "2000-01-02": 1 } }))); const r = g.load(); mem = null; return !!r.days["2000-01-01"] && !!r.days["2000-01-02"]; }, "seiza-v1"));
     check("保存に失敗したタブの時刻が進んでいても、別のタブで先に進んだ途中経過を古いメモリで戻さない", await pn.evaluate((K) => { const g = window.__sz, s0 = g.load(), base = { mode: "d", date: "2000-01-01", list: [1, 2, 3], tags: [1, 2, 3], id: "x", res: [], i: 0 }; mem = JSON.stringify(Object.assign({}, s0, { t: 99, runs: Object.assign({}, s0.runs, { d: Object.assign({}, base) }) })); localStorage.setItem(K, JSON.stringify(Object.assign({}, s0, { t: 1, runs: Object.assign({}, s0.runs, { d: Object.assign({}, base, { res: [{}, {}], i: 2 }) }) }))); const r = g.load(); mem = null; return r.runs.d.res.length === 2 && r.runs.d.i === 2; }, "seiza-v1"));

@@ -114,7 +114,6 @@ dialog a{color:#8a5d00;min-height:44px;display:inline-flex;align-items:center}
 .pop{fill:none;stroke:#fff4cf;stroke-width:4;opacity:0;transform-box:fill-box;transform-origin:center;animation:pop .9s ease-out forwards}
 @keyframes pop{0%{transform:scale(.4);opacity:1}100%{transform:scale(3.2);opacity:0}}
 .sky.won{box-shadow:inset 0 0 0 1px var(--gold),0 0 28px #f2c76b44;transition:box-shadow .4s}
-.life{font-size:18px;letter-spacing:2px;white-space:nowrap}.life .off{opacity:.25}
 .big{font-family:var(--f-disp);font-size:34px;text-align:center;margin:8px 0 0}
 .ach-new{background:#fff3cf;color:#5a3d00;border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;margin:0;text-align:center}
 .achs{display:flex;flex-direction:column;gap:8px}
@@ -317,6 +316,7 @@ html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!i
     <li>見本の線を全部引けば完成。まちがえると★が減ります。</li>
   </ol>
   <p>キーボードでは、Tab か矢印で星を選び、Enter で押せます。</p>
+  <p>上級・練習・とことんは最初から遊べます。練習ととことんは何度でも、好きなだけ。</p>
   <p>星の位置・明るさ・色は本物の星のカタログから。今夜見ごろの星座が出ます。時間制限はありません。</p>
   <p><a href="#" data-a11y-open>見やすさの設定</a>（読みやすい文字・色の見分け・動きを減らす・読み上げ）</p>
   <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
@@ -362,11 +362,11 @@ function pick(k, hard) {
   return rest.slice(0, PER);
 }
 
-// とことん：線の少ない星座 → 多い星座の順に全部の星座（並びは毎回ちがう）、2周目は見本なしで同じように。まちがい・ヒント1回で🎫1枚、🎫が無いときにまちがえると終わり
-const ELIFE = 3, ETIER = (c) => (c.lines.length <= 5 ? 0 : c.lines.length <= 7 ? 1 : 2);
-function endlessList() { const lap = () => { const out = []; for (const t of [0, 1, 2]) { const pool = CONS.map((_, i) => i).filter((i) => ETIER(CONS[i]) === t); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } out.push(...pool); } return out; }; return [...lap(), ...lap()]; }
-const blindAt = (run, i) => run.mode === "h" || (run.mode === "e" && i >= CONS.length); // とことんの2周目は見本なし
-const fresh = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, tut: false, kofi: {}, ach: {}, apark: {}, ebest: 0 }); // pdays: あとから遊んだ日の結果（連続の夜・今日の記録には数えない）。ach: 結果の画面で知らせ終えた実績。apark: あとから遊ぶ日の途中経過を日付ごとに預けておく所（別の日を始めても消さない。戻したら null）
+// とことん：線の少ない星座 → 多い星座の順に全部の星座（並びは毎回ちがう）、2周目は見本なしで同じように。まちがい・ヒントで終わらず、「ここで降りる」まで続く（使い切ったら新しい並びを足す。2026-11-06 satou さん「好きなだけ遊んでほしい」）
+const ETIER = (c) => (c.lines.length <= 5 ? 0 : c.lines.length <= 7 ? 1 : 2);
+function endlessList(avoid) { const lap = () => { const out = []; for (const t of [0, 1, 2]) { const pool = CONS.map((_, i) => i).filter((i) => ETIER(CONS[i]) === t); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } out.push(...pool); } return out; }; const L = [...lap(), ...lap()]; if (avoid != null && L[0] === +avoid) [L[0], L[1]] = [L[1], L[0]]; return L; } // avoid: すぐ前に出した星座（つなぎ目で同じ星座を続けて出さない）
+const blindAt = (run, i) => run.mode === "h" || (run.mode === "e" && i % (CONS.length * 2) >= CONS.length); // とことんの2周目は見本なし（並びを足しても同じ）
+const fresh = () => ({ v: 1, days: {}, hdays: {}, pdays: {}, dex: {}, runs: {}, tut: false, kofi: {}, ach: {}, apark: {}, ebest: 0, pseen: {}, elast: "" }); // pdays: あとから遊んだ日の結果（連続の夜・今日の記録には数えない）。ach: 結果の画面で知らせ終えた実績。apark: あとから遊ぶ日の途中経過を日付ごとに預けておく所（別の日を始めても消さない。戻したら null）。pseen: 練習で星座を出した時刻（出していない星座から選ぶ）。elast: とことんで最後に出した星座（次の回の1つ目にしない）
 let MODE = "d"; // 遊んでいるモード。途中経過はモードごとに runs[mode] へ分けて置く（練習で今夜の途中を消さない）
 let mem = null; // 保存できない環境（保存を切ったブラウザなど）では、開いているあいだだけここに置く
 const doneOf = (r) => !!r && r.res.length >= r.list.length, recOf = (r) => ({ m: r.res });
@@ -446,7 +446,7 @@ function home() {
     <div class="tonight" data-a11y-say>今夜9時ごろの見ごろ　<b>${season.join("・")}</b></div>
     ${done ? `<div class="share">今日の結果\n${done.m.map((m) => "★".repeat(starsOf(m))).join("　")}</div>` : ""}
     <button class="main" id="go-d">${done ? "今日の結果を見る" : rd ? `続きから（${rd.res.length + 1}つ目）` : `今夜の3星座をつなぐ <small>#${dayNo(k)}</small>`}</button>
-    ${done ? `<button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：見本なしで3星座"}</button>` : ""}
+    <button class="main alt" id="go-h">${hdone ? "上級の結果を見る" : rh ? "上級の続きから" : "上級：見本なしで3星座"}</button>
     ${(() => { const re = s.runs.e && !doneOf(s.runs.e) ? s.runs.e : null; return `<button class="main alt" id="go-e" style="flex-wrap:wrap;row-gap:0">${re ? `とことんの続きから（${re.res.length + 1}つ目）` : "とことん：何星座つなげる？"}${s.ebest ? ` <small style="white-space:nowrap">自己ベスト ${s.ebest}</small>` : ""}</button>`; })()}
     <div class="row"><button class="sub" id="go-p">練習（何度でも）</button><button class="sub" id="go-dex">星座帳 ${n}/${CONS.length}</button></div>
     <div class="row"><button class="sub" id="go-cal">カレンダー${missed(s, k).length ? ` <small style="color:var(--gold)">↺${missed(s, k).length}</small>` : ""}</button><button class="sub" id="go-ach">実績 ${achOf(s).filter((a) => a.got).length}/${ACH.length}</button></div>
@@ -468,7 +468,7 @@ function startRun(mode, only) {
   if (mode === "a" && !(load().runs.a && load().runs.a.date === k) && !missed(load()).includes(k)) return calendar(); // 7日より前・遊んだ日・未来の日は始めない
   save((s) => {
     const r = s.runs[mode];
-    if (mode === "e") { if (r && !doneOf(r)) return; s.runs.e = { mode, date: k, list: endlessList(), res: [], life: ELIFE, id: "e" + Date.now().toString(36) + "-" + performance.now().toFixed(3) }; return; } // とことん：途中なら続きから（日をまたいでも続けられる）
+    if (mode === "e") { if (r && !doneOf(r)) return; s.runs.e = { mode, date: k, list: endlessList(s.elast), res: [], id: "e" + Date.now().toString(36) + "-" + performance.now().toFixed(3) }; return; } // とことん：途中なら続きから（日をまたいでも続けられる）
     if (r && r.date === k && mode !== "p") return;
     if (mode === "a" && (s.days[k] || s.pdays[k])) return;
     if (mode === "a") { // 別の日の途中経過は日付ごとに預け、預けてあった日なら続きから
@@ -480,7 +480,7 @@ function startRun(mode, only) {
     let list;
     if (mode === "d" || mode === "a") list = pick(k, false); else if (mode === "h") list = pick(k, true); // あとからも、その日付の種で今夜の3星座と同じ3つ
     else if (only != null) list = [only];
-    else { const pool = CONS.map((_, i) => i); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } list = pool.slice(0, PER); }
+    else { list = practicePick(s.pseen); const now = Date.now(); list.forEach((c, j) => { s.pseen[c] = now + j; }); } // 練習：まだ出していない（出したのが古い）星座から3つ（全部出すまで同じ星座は出ない）
     s.runs[mode] = { mode, date: k, list, res: [], ...(mode === "p" ? { id: Date.now().toString(36) + "-" + performance.now().toFixed(3) } : {}) }; // 練習は始めるたびに見分ける（同じ星座をやり直しても、古い回と取り違えない）
   });
   MODE = mode;
@@ -488,6 +488,8 @@ function startRun(mode, only) {
   play();
 }
 
+// 練習の3星座：出した時刻の古い順（出していない星座が先）、同じ古さの中は毎回ちがう並び
+function practicePick(seen) { const pool = CONS.map((_, i) => i); for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; } const t = pool.map((c) => [c, (seen && seen[c]) || 0]); t.sort((a, b) => a[1] - b[1]); return t.slice(0, PER).map((x) => x[0]); }
 let C = null, drawn = new Set(), miss = 0, hints = 0, sel = null, finished = false, at = null, hl = new Set(), hintL = []; // at: この画面が何番目のどの星座か（古いタブの書き込みを止める）。hintL: ヒントで教えた線、hl: そのうちまだ引いていない線の星（輪を残し、読み上げでも知らせる）
 const lkey = (a, b) => (a < b ? a + "-" + b : b + "-" + a);
 function play() {
@@ -499,14 +501,14 @@ function play() {
   const blind = blindAt(run, i), label = run.mode === "d" ? "今夜の3星座" : run.mode === "h" ? "上級" : run.mode === "a" ? `あとから ${md(run.date)}` : run.mode === "e" ? `とことん${blind ? "・見本なし" : ""}` : "練習";
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="もどる">←</button>
-      ${run.mode === "e" ? `<span class="life" id="life" aria-label="🎫 のこり ${run.life}">${lifeStr(run.life)}</span><span style="font-size:13px;color:var(--muted)">${label} ${i + 1}つ目${s.ebest ? `（ベスト ${s.ebest}）` : ""}</span></header>` : `${run.list.length > 1 ? `<div class="dots" aria-hidden="true">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
+      ${run.mode === "e" ? `<span></span><span style="font-size:13px;color:var(--muted)">${label} ${i + 1}つ目${s.ebest ? `（ベスト ${s.ebest}）` : ""}</span></header>` : `${run.list.length > 1 ? `<div class="dots" aria-hidden="true">${run.list.map((_, j) => `<i class="${j < i ? "done" : j === i ? "on" : ""}"></i>`).join("")}</div>` : ""}
       <span style="font-size:13px;color:var(--muted)">${label} ${i + 1}/${run.list.length}</span></header>`}
     <div class="cname"><div data-a11y-say><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
       <div class="guide" id="guide">${blind ? `<div style="display:grid;place-items:center;height:100%;color:var(--muted);font-size:12px">見本なし</div>` : guideSvg(C)}</div></div>
     <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg" role="group" aria-label="夜空。星を2つ順に選ぶと線を引きます（Tab・矢印で星を選び、Enter で決める）"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C, { keys: true })}<g id="lit"></g><g id="marks"></g></svg></div>
     <div class="status"><span>線</span><span class="bar"><i id="lbar"></i></span><span id="lnum"></span></div>
-    <div class="row"><button class="sub" id="hint">ヒント${run.mode === "e" ? "（🎫1）" : ""}</button><button class="sub" id="skip">線を消す</button></div>
-    ${run.mode === "e" ? `<p class="note">まちがい・ヒント1回で🎫を1枚使います。🎫が無いときにまちがえると終わりです。</p>` : ""}
+    <div class="row"><button class="sub" id="hint">ヒント</button><button class="sub" id="skip">線を消す</button></div>
+    ${run.mode === "e" ? `<p class="note">まちがえてもヒントを使っても続けられます。好きなところで降りてください。</p>` : ""}
     <div id="after"></div>
     ${run.mode === "e" ? `<button class="sub" id="quit" style="width:100%">ここで降りる（${i}星座で終える）</button>` : ""}
     ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint">星から星へなぞるか、2つの星を順に押して線を引きます。</p>` : ""}`;
@@ -525,17 +527,9 @@ function paint() {
   if (!finished) $("marks").innerHTML = [...hl].map((i) => `<circle class="hl still" data-i="${i}" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="30"/>`).join("") + (sel != null ? `<circle class="sel" cx="${C.pts[sel][0] * S}" cy="${C.pts[sel][1] * S}" r="26"/>` : "");
   const used = new Set([...drawn].flatMap((k) => k.split("-").map(Number)));
   document.querySelectorAll("#svg g.st").forEach((g) => { const i = +g.dataset.i; g.setAttribute("aria-label", g.dataset.l + (i === sel ? "（選んでいる）" : "") + (hl.has(i) ? "（ヒントの星）" : "") + (used.has(i) ? "（線でつないだ）" : "")); g.setAttribute("aria-pressed", i === sel ? "true" : "false"); });
-  $("skip").disabled = !drawn.size || finished; $("hint").disabled = finished || (MODE === "e" && lifeOf() <= 0);
+  $("skip").disabled = !drawn.size || finished; $("hint").disabled = finished;
 }
-const lifeStr = (n) => "🎫".repeat(Math.max(0, n)) + `<span class="off">${"🎫".repeat(Math.max(0, ELIFE - n))}</span>`;
-const lifeOf = () => { const r = load().runs.e; return r ? r.life || 0 : 0; };
 const sameAt = (r) => r && at && r.date === at.date && r.id === at.id && r.res.length === at.i && r.list[at.i] === at.c; // 保存した進み具合が、この画面と同じ星座か
-// とことん：まちがい・ヒントで🎫を1枚使う。使えたら true、🎫が無ければ "out"、別の画面で先に進んでいたら false
-function useTicket() {
-  let got = false; save((s) => { const r = s.runs.e; if (!sameAt(r)) return; if ((r.life || 0) > 0) { r.life--; got = true; } else got = "out"; });
-  const l = $("life"), n = lifeOf(); if (l) { l.innerHTML = lifeStr(n); l.setAttribute("aria-label", "🎫 のこり " + n); }
-  return got;
-}
 function nearest(ev) {
   const svg = $("svg"), r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * S, y = (ev.clientY - r.top) / r.height * S * 1.25;
   let best = null, bd = HIT * HIT;
@@ -552,7 +546,6 @@ function connect(a, b) {
     for (const i of [a, b]) if (!on.has(i)) $("lit").insertAdjacentHTML("beforeend", `<circle class="lit new" data-i="${i}" cx="${C.pts[i][0] * S}" cy="${C.pts[i][1] * S}" r="${(rOf(C.pts[i][2]) + 9).toFixed(1)}"/>`);
     if (drawn.size === C.lines.length) complete(); else say(`線をつなぎました（${drawn.size}/${C.lines.length}）`);
   } else {
-    if (MODE === "e") { const t = useTicket(); if (t === false) { toast("別の画面で先に進んでいます"); return play(); } if (t === "out") { finished = true; buzz(80); return finish("out"); } } // 🎫が無いときのまちがいで終わり
     miss++; buzz(40); toast("✕ その2つは線になりません");
     const g = document.createElementNS("http://www.w3.org/2000/svg", "g"); g.innerHTML = lineSvg(C, [a, b], "bad"); $("lines").appendChild(g); setTimeout(() => g.remove(), 450);
   }
@@ -593,7 +586,6 @@ function tap(i) {
 }
 function hint() {
   if (finished) return;
-  if (MODE === "e") { const t = useTicket(); if (t !== true) return paint(); }
   const rest = C.lines.filter(([a, b]) => !drawn.has(lkey(a, b)));
   const pref = rest.find(([a, b]) => [...drawn].some((k) => k.split("-").map(Number).some((x) => x === a || x === b))) || rest[0];
   hints++; hintL.push(pref); paint();
@@ -605,7 +597,7 @@ function complete() {
   if (!same(load().runs[MODE])) { toast("別の画面で先に進んでいます"); return play(); }
   finished = true; sel = null; paint();
   const m = miss + hints, st = starsOf(m);
-  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); });
+  const s = save((s) => { const r = s.runs[MODE]; if (!same(r)) return; r.res.push(m); s.dex[C.id] = Math.max(s.dex[C.id] || 0, st); if (MODE === "e" && r.res.length >= r.list.length) r.list = r.list.concat(endlessList(r.list[r.list.length - 1])); }); // とことんは並びを使い切っても終わらない：新しい並びを足して続ける
   $("marks").innerHTML = C.pts.slice(0, C.main).map((p, i) => (p[4] ? `<text class="nm" x="${p[0] * S + 22}" y="${p[1] * S - 14}">${p[4]}</text>` : "")).join("");
   document.querySelectorAll(".cl").forEach((l) => (l.style.strokeWidth = 7));
   $("sky").classList.add("won"); // 完成：星座の星が順に光る
@@ -617,10 +609,10 @@ function complete() {
   if ($("quit")) $("quit").textContent = `ここで降りる（${r ? r.res.length : at.i}星座で終える）`;
   setTimeout(() => $("next") && $("next").scrollIntoView({ behavior: calm() ? "auto" : "smooth", block: "nearest" }), 50);
 }
-function finish(why) {
+function finish() {
   const s = load(), run = s.runs[MODE];
   if (!run) return home();
-  if (run.mode === "e") return endFinish(run, why);
+  if (run.mode === "e") return endFinish(run);
   let first = false;
   save((s2) => {
     first = bank(s2, run);
@@ -631,16 +623,16 @@ function finish(why) {
   result(run.mode, run.date, first);
 }
 // とことんの終わり：つないだ星座の数を自己ベストと比べる（他の人との順位は出さない。今日の記録・連続・シェア・Ko-fi には数えない）
-function endFinish(run, why) {
+function endFinish(run) {
   const n = run.res.length; let prev = 0;
-  save((s2) => { prev = s2.ebest || 0; s2.ebest = Math.max(prev, n); const c = s2.runs.e; if (c && c.id === run.id) s2.runs.e = null; });
-  const s = load(), best = n > prev && n > 0, all = n >= run.list.length;
+  save((s2) => { prev = s2.ebest || 0; s2.ebest = Math.max(prev, n); if (n) s2.elast = String(run.list[n - 1]); const c = s2.runs.e; if (c && c.id === run.id) s2.runs.e = null; });
+  const s = load(), best = n > prev && n > 0, miss = run.res.reduce((a, m) => a + m, 0);
   const fresh1 = achOf(s).filter((a) => a.got && !s.ach[a.id]);
   if (fresh1.length) save((s2) => { for (const a of fresh1) s2.ach[a.id] = 1; });
   app.innerHTML = `
     <header><button class="icon" id="back" aria-label="ホームへ">←</button><h1>星座つなぎ<small>とことん</small></h1><span></span></header>
-    ${why === "out" ? `<p class="note" id="eout">🎫が無いときにまちがえたので、ここまで</p>` : all ? `<p class="note" id="eout">全部の星座を見本なしまでつなぎました</p>` : ""}
     <p class="big" id="eres" data-a11y-say>${n}星座 つないだ</p>
+    ${n ? `<p class="note" id="emiss">まちがい・ヒント あわせて${miss}回</p>` : ""}
     <p class="note" id="ebest">${best ? "🎉 自己ベスト更新！" : `自己ベスト ${s.ebest}${s.ebest >= n ? `（あと${s.ebest - n + 1}で更新）` : ""}`}</p>
     ${fresh1.length ? `<p class="ach-new">🏅 実績：${fresh1.length > 2 ? `${fresh1[0].name} ほか${fresh1.length - 1}つ` : fresh1.map((a) => a.name).join("・")}</p>` : ""}
     ${n ? `<div class="line5">${run.list.slice(0, n).map((ci, j) => `<div>${miniSvg(CONS[ci])}<b>${CONS[ci].n}</b><br>${starStr(starsOf(run.res[j]))}</div>`).join("")}</div>` : ""}
@@ -739,7 +731,7 @@ function calendar(ym) {
   window.scrollTo(0, 0);
 }
 
-window.__sz = { endlessList, ELIFE, ETIER, ACH, achOf, missed, maxStreak, streak, calendar, achView, startRun, CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: (m) => { if (m) MODE = m; play(); }, mode: () => MODE };
+window.__sz = { endlessList, practicePick, blindAt, ETIER, ACH, achOf, missed, maxStreak, streak, calendar, achView, startRun, CONS, pick, inSeason, raAt21, bestMonth, todayKey, load, connect: (a, b) => connect(a, b), state: () => ({ C, drawn: [...drawn], miss, hints, finished }), play: (m) => { if (m) MODE = m; play(); }, mode: () => MODE };
 home();
 if ("serviceWorker" in navigator && location.protocol === "https:" && /github\.io$/.test(location.hostname)) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
