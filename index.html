@@ -108,8 +108,10 @@ dialog a{color:#8a5d00;min-height:44px;display:inline-flex;align-items:center}
 #howto-ok{position:sticky;bottom:0;width:100%;margin-top:4px}
 /* ホームの夜空の絵は、背の低い画面では小さくし、遊ぶボタンを最初の画面に入れる */
 .hero{width:min(62%,22vh);margin:0 auto}
-/* はじめての一言は夜空の上に重ね、遊ぶボタンを押し下げない（1本引くと消える） */
-.tip{position:absolute;left:8px;right:8px;top:8px;margin:0;padding:8px 10px;font-size:13px;line-height:1.5;background:#070b1ae6;pointer-events:none;transition:opacity .3s}
+/* はじめての一言は夜空のすぐ下に置き、星に重ねない（2026-11-07 幅320pxでこと座のベガが隠れていた。1本引くと消える） */
+.tip{margin:0;padding:4px 10px;font-size:13px;line-height:1.5}
+/* 一言が出ているあいだは、まだ0本の線の数の行と入れかえて、ヒント・線を消すを最初の画面に入れる */
+.tip+.status{display:none}
 /* まちがえた瞬間：夜空の縁が一度だけ赤く光る（✕ の知らせと破線もある） */
 .sky.miss{animation:miss .45s ease-out}
 @keyframes miss{0%{box-shadow:inset 0 0 0 3px var(--bad)}100%{box-shadow:inset 0 0 0 1px var(--line)}}
@@ -327,7 +329,7 @@ html.a11y-say body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!i
     <li>見本の線を全部引けば完成。まちがえると★が減ります。</li>
   </ol>
   <p>キーボードでは、Tab か矢印で星を選び、Enter で押せます。</p>
-  <p>星の位置・明るさ・色は本物のカタログから。時間制限はなく、上級・練習・とことんも最初から何度でも遊べます。</p>
+  <p>星の位置・明るさ・色は本物のカタログから。時間制限はありません。上級は最初の日から1日1回、練習・とことんは何度でも遊べます。</p>
   <p><a href="#" data-a11y-open>見やすさの設定</a>（読みやすい文字・色の見分け・動きを減らす・読み上げ）</p>
   <p><a id="fb2" target="_blank" rel="noopener">感想を送る</a></p>
   <button class="main" id="howto-ok" autofocus>わかった</button>
@@ -515,7 +517,8 @@ function play() {
       <span style="font-size:13px;color:var(--muted)">${label} ${i + 1}/${run.list.length}</span></header>`}
     <div class="cname"><div data-a11y-say><b>${C.n}</b><small>${C.sub ? C.sub + "・" : ""}見ごろ ${bestMonth(C)}月の夜9時ごろ ${where(C)}</small></div>
       <div class="guide" id="guide">${blind ? `<div style="display:grid;place-items:center;height:100%;color:var(--muted);font-size:12px">見本なし</div>` : guideSvg(C)}</div></div>
-    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg" role="group" aria-label="夜空。星を2つ順に選ぶと線を引きます（Tab・矢印で星を選び、Enter で決める）"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C, { keys: true })}<g id="lit"></g><g id="marks"></g></svg>${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint tip" id="tip">星から星へなぞるか、2つの星を順に押して線を引きます。</p>` : ""}</div>
+    <div class="sky" id="sky"><svg viewBox="0 0 ${S} ${S * 1.25}" id="svg" role="group" aria-label="夜空。星を2つ順に選ぶと線を引きます（Tab・矢印で星を選び、Enter で決める）"><g id="lines"></g><line id="band" x1="0" y1="0" x2="0" y2="0" visibility="hidden"/>${starsSvg(C, { keys: true })}<g id="lit"></g><g id="marks"></g></svg></div>
+    ${!s.tut || (Object.keys(s.dex).length === 0 && i === 0) ? `<p class="hint tip" id="tip">星をなぞるか2つ押すと、線が引けます</p>` : ""}
     <div class="status"><span>線</span><span class="bar"><i id="lbar"></i></span><span id="lnum"></span></div>
     <div class="row"><button class="sub" id="hint">ヒント</button><button class="sub" id="skip">線を消す</button></div>
     ${run.mode === "e" ? `<p class="note">まちがえてもヒントを使っても続けられます。好きなところで降りてください。</p>` : ""}
