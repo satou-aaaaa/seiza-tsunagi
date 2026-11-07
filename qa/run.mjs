@@ -208,6 +208,50 @@ try {
     check(`幅${w}px：横にはみ出さず、押せる所は高さ44px以上・星の押せる広さ${w === 320 ? "35" : "40"}px以上`, homeOk && !r.over && r.small.length === 0 && hit >= (w === 320 ? 35 : 40), `${r.small.join(",")} 星${hit.toFixed(0)}px`);
     await p3.close();
   }
+  // スマホではじめて遊ぶ人が迷わないように（2026-11-07 UI/UX の見直し）：最初の画面に押す所が入る・はじめての一言が見える・まちがいの知らせが「次へ」をふさがない
+  for (const [w, h] of [[390, 844], [320, 640]]) {
+    const pu = await newPage(w, h);
+    const inView = (sel) => pu.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5; }, sel);
+    check(`${w}×${h}：遊び方の「わかった」が開いたときから見える（長い文の下に隠れない）・最初に選ばれている`, await inView("#howto-ok") && await pu.evaluate(() => document.activeElement && document.activeElement.id === "howto-ok"));
+    await pu.click("#howto-ok");
+    check(`${w}×${h}：ホームの最初の画面に「今夜の3星座」「上級」「とことん」のボタンが入る`, (await inView("#go-d")) && (await inView("#go-h")) && (await inView("#go-e")));
+    check(`${w}×${h}：ホームの説明は2行まで`, await pu.evaluate(() => { const l = document.querySelector(".lead"); return l.getBoundingClientRect().height <= parseFloat(getComputedStyle(l).lineHeight) * 2 + 2; }));
+    await pu.click("#go-d");
+    check(`${w}×${h}：はじめての一言は夜空の外（星に重ならない所）に見え、ヒント・線を消すのボタンも最初の画面に入る`, (await inView("#tip")) && (await pu.evaluate(() => !document.getElementById("sky").contains(document.getElementById("tip")))) && (await inView("#hint")) && (await inView("#skip")));
+    const C = (await st(pu)).C;
+    const wrong = await pu.evaluate(() => { const { C } = window.__sz.state(), k = new Set(C.lines.map(([a, b]) => Math.min(a, b) + "-" + Math.max(a, b))); for (let i = 0; i < C.pts.length; i++) for (let j = i + 1; j < C.pts.length; j++) if (!k.has(i + "-" + j)) return [i, j]; });
+    await pu.evaluate((l) => window.__sz.connect(...l), wrong);
+    const tb = await pu.evaluate(() => { const t = document.querySelector(".toast").getBoundingClientRect(), s = document.getElementById("sky"); return { top: t.top, bottom: t.bottom, left: t.left, right: t.right, miss: s.classList.contains("miss") }; });
+    check(`${w}×${h}：まちがえると夜空の縁が光り、✕ の知らせは画面の上に1つの箱で出る（はみ出さない）`, tb.miss && tb.top >= 0 && tb.bottom < h / 3 && tb.left >= 0 && tb.right <= w, JSON.stringify(tb));
+    await pu.evaluate((l) => window.__sz.connect(...l), C.lines[0]);
+    check(`${w}×${h}：1本引くと、はじめての一言は消える`, (await pu.locator("#tip").count()) === 0);
+    for (const l of C.lines.slice(1)) await pu.evaluate((l) => window.__sz.connect(...l), l);
+    await pu.waitForTimeout(700);
+    const nb = await pu.evaluate(() => { const n = document.getElementById("next").getBoundingClientRect(), t = document.querySelector(".toast"); const r = t && t.getBoundingClientRect(); return { inView: n.top >= 0 && n.bottom <= innerHeight + 0.5, hidden: !!r && !(r.bottom <= n.top || r.top >= n.bottom) }; });
+    check(`${w}×${h}：完成すると「次の星座へ」が画面に入り、知らせにふさがれない`, nb.inView && !nb.hidden, JSON.stringify(nb));
+    check(`${w}×${h}：横にはみ出さない（遊ぶ画面）`, await pu.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await pu.close();
+  }
+  { // 遊び方の文が、1日1回の上級を「何度でも」と言わない（2026-11-07 CodeRabbit）
+    const how = (html.match(/<dialog[^>]*id="howto"[\s\S]*?<\/dialog>/) || [""])[0].replace(/<[^>]+>/g, "");
+    check("遊び方：上級を「何度でも」と書かず、1日1回と書く", how && !/上級[^。、]*何度でも/.test(how) && /上級[^。、]*1日1回/.test(how));
+  }
+  // はじめての一言（#tip）は夜空のどの星にも重ならない（2026-11-07 CodeRabbit：幅320pxでこと座のベガが隠れていた）。どの星座もはじめての1つになりうるので全部の星座で見る
+  for (const [w, h] of [[320, 640], [390, 844]]) {
+    const pt = await newPage(w, h); const bad = [];
+    for (let c = 0; c < CONS.length; c++) {
+      const r = await pt.evaluate(([KEYV, c]) => {
+        localStorage.setItem(KEYV, JSON.stringify({ v: 1, tut: false, dex: {}, runs: { p: { mode: "p", date: window.__sz.todayKey(), list: [c], res: [], id: "qa-tip" + c } } }));
+        window.__sz.play("p");
+        const t = document.getElementById("tip"); if (!t) return { none: true };
+        const a = t.getBoundingClientRect(), hits = [...document.querySelectorAll("#svg g.st")].filter((g) => { const b = g.getBoundingClientRect(); return !(b.right <= a.left || b.left >= a.right || b.bottom <= a.top || b.top >= a.bottom); }).map((g) => g.id);
+        return { hits, inView: a.top >= 0 && a.bottom <= innerHeight + 0.5 };
+      }, ["seiza-v1", c]);
+      if (r.none || r.hits.length || !r.inView) bad.push(`${CONS[c].n}:${r.none ? "一言なし" : r.hits.join("/") || "画面外"}`);
+    }
+    check(`${w}×${h}：はじめての一言はどの星座でも夜空の星（${CONS.length}星座の全部の星）に重ならず、最初の画面に見える`, bad.length === 0, bad.join(" "));
+    await pt.close();
+  }
   { // 保存できないブラウザでも遊べる（開いているあいだは途中経過を覚えている）
     const pb = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pb.on("pageerror", (e) => errors.push(e.message));
