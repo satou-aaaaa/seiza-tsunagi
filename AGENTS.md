@@ -29,7 +29,7 @@ node qa/run.mjs   # 星のデータ（本物の向き・色・線）・今夜の
 - 文字は少なめ・一画面一星座。お笑いの言葉は入れない（本物っぽさ優先。QA が見る）。ほかの作品の名前・キャラ・見た目は使わない。星座の絵（神話の絵）は入れない（著作物を使わない）。
 - 共有は遊ぶ人が押したときに開くリンク（X・LINE・Web Share・コピー）だけ。シェアの文は星（★）だけ。
 - 感想は「感想を送る」から GitHub の Issue フォーム（`.github/ISSUE_TEMPLATE/feedback.yml`、ラベル「感想」）を開くだけ。項目は shared-workflows の `template/.github/ISSUE_TEMPLATE/feedback.yml` と同じにし、名前・メールは聞かない。週1で shared-workflows `routines/game-feedback.md` が読んで直す。
-- 応援は Ko-fi（https://ko-fi.com/satouaaaaa）へのただのリンクだけ。今日の3星座・上級を初めてまちがいなしで終えたときだけ、結果の画面の下に1行（共有フォルダ kofi/app-guide.md）。遊ぶのは無料のまま、有料版は置かない。
+- 応援は Ko-fi（<https://ko-fi.com/satouaaaaa>）へのただのリンクだけ。今日の3星座・上級を初めてまちがいなしで終えたときだけ、結果の画面の下に1行（共有フォルダ kofi/app-guide.md）。遊ぶのは無料のまま、有料版は置かない。
 - 外へ通信しない。外から読むのは Google Fonts の文字だけ（CSP の `connect-src 'self'` を広げない）。記録は遊ぶ人のブラウザ（localStorage）だけ。
 - 押せる所は高さ44px以上、星は近くを押せば反応する（`HIT`。幅320pxでも35px以上。QA が見る）。星どうしは画面の幅の4%以上離す（`make-data.cjs` が近すぎるまよう星を入れない）。
 - 機能を足す・直すたびに `qa/run.mjs` に検査を足す。乱数で組む部分は何百回も作って確かめる（shared-workflows `incidents/2026-10-31-roppo-empty-village.md`）。検査の期待値を乱数（練習の星座など）の結果に頼らない。
