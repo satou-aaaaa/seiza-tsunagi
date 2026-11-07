@@ -423,7 +423,8 @@ const buzz = (ms = 10) => { if (calm()) return; try { navigator.vibrate && navig
 const footer = () => `<footer><a href="#" id="f-how">遊び方</a><a href="#" data-a11y-open>見やすさ</a><a href="#" data-hk>引き継ぎ</a><a id="f-fb" href="${FEEDBACK}" target="_blank" rel="noopener">感想を送る</a><a href="https://ko-fi.com/satouaaaaa" target="_blank" rel="noopener">Ko-fi で応援</a></footer>`;
 function bindFooter() { const h = $("f-how"); if (h) h.onclick = (e) => { e.preventDefault(); openHow(); }; }
 function openHow() { $("fb2").href = FEEDBACK; const d = $("howto"); if (d.showModal) d.showModal(); else d.setAttribute("open", ""); }
-$("howto-ok").onclick = () => { const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); save((s) => { s.tut = true; }); };
+$("howto").addEventListener("close", () => { if (!load().tut) save((s) => { s.tut = true; }); }); // Esc で閉じても「見た」を残す
+$("howto-ok").onclick = () => { save((s) => { s.tut = true; }); const d = $("howto"); d.close ? d.close() : d.removeAttribute("open"); }; // 押したらすぐ残す（close の知らせは少し遅れて届くので、すぐ読み直すと間に合わない）
 
 // 色温度から星の色（おおよそ）
 function kColor(k) { const t = Math.max(2500, Math.min(15000, k)); if (t < 4000) return "#ffb38a"; if (t < 5200) return "#ffd2a1"; if (t < 6300) return "#fff1d6"; if (t < 8000) return "#f4f6ff"; if (t < 11000) return "#d6e2ff"; return "#b9cdff"; }
