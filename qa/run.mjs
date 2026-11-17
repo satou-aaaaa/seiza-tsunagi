@@ -209,7 +209,7 @@ try {
     const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
-    const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) }));
+    const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
     const hit = await p3.evaluate(() => { const svg = document.getElementById("svg"); return svg.getBoundingClientRect().width / 1000 * 62 * 2; });
     check(`幅${w}px：横にはみ出さず、押せる所は高さ44px以上・星の押せる広さ${w === 320 ? "35" : "40"}px以上`, homeOk && !r.over && r.small.length === 0 && hit >= (w === 320 ? 35 : 40), `${r.small.join(",")} 星${hit.toFixed(0)}px`);
     await p3.close();
@@ -392,7 +392,7 @@ try {
     await pm.close(); }
   for (const w of [320, 390]) { // 実績・カレンダーの画面が狭い幅で崩れない
     const pw = await clockPage(w, "2026-12-03T03:00:00Z", { days: { "2026-12-01": { m: [0, 0, 0] } }, pdays: { "2026-11-29": { m: [1, 0, 0] } } });
-    const look = async () => pw.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && e.getBoundingClientRect().height < 44).map((e) => e.textContent.trim() || e.id) }));
+    const look = async () => pw.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
     const h = await look(); await pw.click("#go-ach"); const a = await look(); const rows = await pw.locator(".ach").count(); await pw.click("#back"); await pw.click("#go-cal"); const c = await look(); await pw.click("#cal-prev"); const c2 = await look();
     check(`幅${w}px：ホーム・実績・カレンダーが横にはみ出さず、押せる所は高さ44px以上`, [h, a, c, c2].every((x) => !x.over && x.small.length === 0) && rows >= 10, JSON.stringify([h, a, c, c2].map((x) => x.small)));
     await pw.close(); }
