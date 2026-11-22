@@ -12,7 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const url = pathToFileURL(path.join(root, "index.html")).href; // # などを含むフォルダ名でも開ける
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
-const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.locator("#core-coach").count()) { await q.evaluate(() => Core.coach.leave()); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
+const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.evaluate(() => !!(window.Core && Core.coach && Core.coach.active()))) { await q.evaluate(() => { Core.coach.leave(); scrollTo(0, 0); }); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
 
 // 1. 星のデータ
 const sb = { window: {} }; vm.runInNewContext(readFileSync(path.join(root, "data.js"), "utf8"), sb);
@@ -207,7 +207,7 @@ try {
     check("降りると、そこまでの数が自己ベストになり、まちがい・ヒントの回数を出す", (await pe.textContent("#eres")).includes(`${2 * n}星座`) && (await pe.evaluate(() => window.__sz.load().ebest)) === 2 * n && (await pe.textContent("#emiss")).includes("1回"));
     await pe.close(); }
   for (const w of [320, 390]) {
-    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.click("#f-how")); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
+    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.evaluate(() => openHow())); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
     const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
@@ -219,7 +219,7 @@ try {
   for (const [w, h] of [[390, 844], [320, 640]]) {
     const pu = await newPage(w, h);
     const inView = (sel) => pu.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5; }, sel);
-    await firstClose(pu).then(() => pu.click("#f-how"));
+    await firstClose(pu).then(() => pu.evaluate(() => openHow()));
     check(`${w}×${h}：遊び方の「わかった」が開いたときから見える（長い文の下に隠れない）・最初に選ばれている`, await inView("#howto-ok") && await pu.evaluate(() => document.activeElement && document.activeElement.id === "howto-ok"));
     await firstClose(pu);
     check(`${w}×${h}：ホームの最初の画面に「今夜の3星座」「上級」「とことん」のボタンが入る`, (await inView("#go-d")) && (await inView("#go-h")) && (await inView("#go-e")));
