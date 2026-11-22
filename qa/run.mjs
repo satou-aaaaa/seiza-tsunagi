@@ -12,6 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const url = pathToFileURL(path.join(root, "index.html")).href; // # などを含むフォルダ名でも開ける
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok: !!ok, detail });
+const firstClose = async (q) => { if (await q.locator("#howto[open]").count()) await q.click("#howto-ok"); if (await q.locator("#core-coach").count()) { await q.evaluate(() => Core.coach.leave()); await q.waitForTimeout(100); } }; // はじめての練習の吹き出しをやめてホームへ（sync-template の migrateFirstQa が足した）
 
 // 1. 星のデータ
 const sb = { window: {} }; vm.runInNewContext(readFileSync(path.join(root, "data.js"), "utf8"), sb);
@@ -89,12 +90,12 @@ try {
   const m2 = await page.evaluate(() => { const { inSeason, CONS } = window.__sz; return inSeason("2027-02-01").map((i) => CONS[i].id); });
   check("2月の夜の見ごろにオリオン座・おおいぬ座", m2.includes("Ori") && m2.includes("CMa"), m2.join(","));
 
-  check("はじめて開くと遊び方が出る", await page.locator("#howto[open]").count() === 1);
+  check("はじめて開くと遊び方が出る", await page.locator("#core-coach").count() === 1);
   await page.keyboard.press("Escape"); await page.waitForTimeout(100); check("遊び方を Esc で閉じられる", await page.locator("#howto[open]").count() === 0);
   await page.reload(); await page.waitForTimeout(200); check("遊び方を Esc で閉じても、開き直したとき出ない", await page.locator("#howto[open]").count() === 0);
-  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await page.click("#howto-ok"); await page.reload(); await page.waitForTimeout(200); check("遊び方を「わかった」で閉じてすぐ読み直しても出ない", await page.locator("#howto[open]").count() === 0);
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await firstClose(page); await page.reload(); await page.waitForTimeout(200); check("遊び方を「わかった」で閉じてすぐ読み直しても出ない", await page.locator("#howto[open]").count() === 0);
   { let again = 0; for (let i = 0; i < 10; i++) { await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); await page.keyboard.press("Escape"); await page.reload(); await page.waitForTimeout(200); again += await page.locator("#howto[open]").count(); } check("遊び方を Esc で閉じてすぐ読み直しても出ない（10回）", again === 0); }
-  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); check("「わかった」を押したその場で「見た」が残る", await page.locator("#howto-ok").evaluate((b) => { b.click(); return Object.keys(localStorage).some((k) => { try { return JSON.parse(localStorage.getItem(k)).tut === true; } catch { return false; } }); }));
+  await page.evaluate(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(200); check("はじめての練習が始まったその場で「見た」が残る", await page.evaluate(() => { return Object.keys(localStorage).some((k) => { try { return JSON.parse(localStorage.getItem(k)).tut === true; } catch { return false; } }); })); await firstClose(page);
   check("遊ぶ前の画面に Ko-fi のひとことが無い", (await page.locator(".kofi").count()) === 0);
   check("Ko-fi へのリンクは結果の1行と下の欄（footer）だけ（遊ぶ前・遊び方に出さない）", await page.evaluate(() => [...document.querySelectorAll('a[href*="ko-fi.com"]')].every((a) => a.closest("footer") || a.closest(".kofi"))));
   check("感想を送るリンクがある", (await page.getAttribute("#f-fb", "href")) === "https://github.com/satou-aaaaa/seiza-tsunagi/issues/new?template=feedback.yml");
@@ -167,7 +168,7 @@ try {
   await page.close();
 
   { // とことん：次々に出る・線の少ない星座から多い星座へ・2周目は見本なし・まちがいとヒントで終わらない・降りると自己ベスト（2026-11-05「一日で遊べる量が少なすぎる」、2026-11-06 satou さん「好きなだけ遊んでほしい」でチケットを外した）
-    const pe = await newPage(); await pe.click("#howto-ok");
+    const pe = await newPage(); await firstClose(pe);
     const L = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 500; r++) { const av = r % n, L = g.endlessList(av); if (L.length !== n * 2) return "長さ" + L.length; if (L[0] === av) return "前の回の最後と同じ星座から始まる"; for (const lap of [L.slice(0, n), L.slice(n)]) { if (new Set(lap).size !== n) return "同じ星座が同じ周に2度"; const t = lap.map((i) => g.ETIER(g.CONS[i])); if (t.some((x, i) => i && x < t[i - 1])) return "難しさが下がる"; } for (let i = 1; i < L.length; i++) if (L[i] === L[i - 1]) return "同じ星座が続けて出る"; } const a = g.endlessList().join(), b = g.endlessList().join(); return a === b ? "毎回同じ並び" : "ok"; });
     check("とことんの並び（500回）：全部の星座を線の少ない順の組から1回ずつ・2周目は見本なし・毎回ちがう並び・前の回の最後の星座から始めない", L === "ok", L);
     const P = await pe.evaluate(() => { const g = window.__sz, n = g.CONS.length; for (let r = 0; r < 300; r++) { const seen = {}, out = []; let t = 1; for (let k = 0; k < Math.ceil(n / 3); k++) { const p = g.practicePick(seen); if (p.length !== 3 || new Set(p).size !== 3) return "3つでない"; p.forEach((c) => { seen[c] = t++; }); out.push(...p); } if (new Set(out.slice(0, n)).size !== n) return "全部の星座を出す前に同じ星座が出た"; } return "ok"; });
@@ -206,7 +207,7 @@ try {
     check("降りると、そこまでの数が自己ベストになり、まちがい・ヒントの回数を出す", (await pe.textContent("#eres")).includes(`${2 * n}星座`) && (await pe.evaluate(() => window.__sz.load().ebest)) === 2 * n && (await pe.textContent("#emiss")).includes("1回"));
     await pe.close(); }
   for (const w of [320, 390]) {
-    const p3 = await newPage(w, 700); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await p3.click("#howto-ok");
+    const p3 = await newPage(w, 700); await firstClose(p3).then(() => p3.click("#f-how")); const fb2 = await p3.evaluate(() => { const a = document.querySelector("#howto #fb2"); return a ? a.getBoundingClientRect().height : 0; }); check(`幅${w}px：遊び方の「感想を送る」も高さ44px以上`, fb2 >= 44, `${fb2}px`); await firstClose(p3);
     const homeOk = await p3.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
     await p3.click("#go-d");
     const r = await p3.evaluate(() => ({ over: document.documentElement.scrollWidth > innerWidth, small: [...document.querySelectorAll("button, a")].filter((e) => e.offsetParent && Math.round(e.getBoundingClientRect().height) < 44).map((e) => e.textContent.trim() || e.id) }));
@@ -218,8 +219,9 @@ try {
   for (const [w, h] of [[390, 844], [320, 640]]) {
     const pu = await newPage(w, h);
     const inView = (sel) => pu.evaluate((sel) => { const e = document.querySelector(sel); if (!e) return false; const r = e.getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= innerHeight + 0.5 && r.left >= 0 && r.right <= innerWidth + 0.5; }, sel);
+    await firstClose(pu).then(() => pu.click("#f-how"));
     check(`${w}×${h}：遊び方の「わかった」が開いたときから見える（長い文の下に隠れない）・最初に選ばれている`, await inView("#howto-ok") && await pu.evaluate(() => document.activeElement && document.activeElement.id === "howto-ok"));
-    await pu.click("#howto-ok");
+    await firstClose(pu);
     check(`${w}×${h}：ホームの最初の画面に「今夜の3星座」「上級」「とことん」のボタンが入る`, (await inView("#go-d")) && (await inView("#go-h")) && (await inView("#go-e")));
     check(`${w}×${h}：ホームの説明は2行まで`, await pu.evaluate(() => { const l = document.querySelector(".lead"); return l.getBoundingClientRect().height <= parseFloat(getComputedStyle(l).lineHeight) * 2 + 2; }));
     await pu.click("#go-d");
@@ -262,7 +264,7 @@ try {
     const pb = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pb.on("pageerror", (e) => errors.push(e.message));
     await pb.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error("blocked"); }; });
-    await pb.goto(url); await pb.click("#howto-ok"); await pb.click("#go-d");
+    await pb.goto(url); await firstClose(pb); await pb.click("#go-d");
     check("保存できないブラウザでも、今日の1問目が始まる", (await pb.textContent("header")).includes("1/3"));
     await pb.click("#back");
     check("保存できないブラウザでも、遊び方が何度も開かない", !(await pb.locator("#howto[open]").count()));
@@ -406,7 +408,7 @@ try {
   try { // キーボードで選んだボタンに枠が出る（all:unset のカレンダーのます目でも消えない。2026-11-04 CodeRabbit の指摘）。止まっても失敗として記録し、レポートまで進む
     const pf = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await pf.goto(url); await pf.evaluate(() => localStorage.clear()); await pf.reload();
-    await pf.click("#howto-ok").catch(() => {});
+    await firstClose(pf).catch(() => {});
     const bad = [];
     for (const open of [null, "#go-cal"]) {
       if (open) await pf.click(open);
@@ -421,13 +423,13 @@ try {
     await pf.close();
   } catch (e) { check("キーボードで選んだボタン（カレンダーのあとから遊ぶ日も）に枠が出る", false, e.message.split("\n")[0]); }
   try { // 引き継ぎコード（別の端末へ記録を移す。shared-workflows template/qa/transfer-check.mjs）
-    await checkTransfer({ browser, url, game: "seiza-tsunagi", sample: { "seiza-v1": JSON.stringify({ v: 1, tut: true }) }, check, open: async (p) => { await p.click("#howto-ok", { timeout: 1500 }).catch(() => {}); } });
+    await checkTransfer({ browser, url, game: "seiza-tsunagi", sample: { "seiza-v1": JSON.stringify({ v: 1, tut: true }) }, check, open: async (p) => { await firstClose(p).catch(() => {}); } });
   } catch (e) { check("引き継ぎコード", false, e.message.split("\n")[0]); }
   try { // だれでも遊べるように（shared-workflows routines/game-dev.md A1・A6・A7）：色だけで分けない・キーボードだけで遊べる・知らせを文字で
     const pk = await browser.newPage({ viewport: { width: 390, height: 844 } });
     pk.on("pageerror", (e) => errors.push(e.message));
     await pk.goto(url); await pk.evaluate(() => localStorage.clear()); await pk.reload();
-    await pk.click("#howto-ok"); await pk.click("#go-d");
+    await firstClose(pk); await pk.click("#go-d");
     const C = (await st(pk)).C, live = () => pk.textContent("#live");
     const order = await pk.evaluate(() => [...document.querySelectorAll("#svg g.st")].map((g) => +g.dataset.i));
     check("夜空の星はどれも role=button・tabindex・名前（場所と明るさ）を持つ", order.length === C.pts.length && await pk.evaluate(() => [...document.querySelectorAll("#svg g.st")].every((g) => g.getAttribute("role") === "button" && g.tabIndex === 0 && /^星\d+・/.test(g.getAttribute("aria-label")))));
