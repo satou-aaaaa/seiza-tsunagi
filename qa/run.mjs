@@ -146,7 +146,7 @@ try {
   const share = await page.textContent(".share");
   check("新しく取れた実績が結果の画面に1行だけ出る（はじめての★3）", (await page.locator(".ach-new").count()) === 1 && (await page.textContent(".ach-new")).includes("はじめての★3"));
   check("3星座で結果・シェアの文は番号と星だけ（星座名は出さない）", /星座つなぎ #\d+/.test(share) && (share.match(/[★☆]/g) || []).length === 9 && !(await page.evaluate(() => window.__sz.CONS.some((c) => document.querySelector(".share").textContent.includes(c.n)))));
-  check("X・LINE は押したときに開くリンクだけ", /^https:\/\/twitter\.com\/intent\/tweet\?text=/.test(await page.getAttribute("#toX", "href")) && /^https:\/\/line\.me\/R\/share\?text=/.test(await page.getAttribute("#toLine", "href")));
+  check("X・LINE は押したときに開くリンクだけ", /^https:\/\/(?:x|twitter)\.com\/intent\/tweet\?text=/.test(await page.getAttribute("#toX", "href")) && /^https:\/\/line\.me\/R\/share\?text=/.test(await page.getAttribute("#toLine", "href")));
   check("まちがいのあった日は Ko-fi のひとことを出さない", (await page.locator(".kofi").count()) === 0);
   check("今夜の3星座の結果に「続けて遊ぶ：とことん」の大きなボタン", (await page.locator("#go-e.main").count()) === 1);
   await page.click("#back");
